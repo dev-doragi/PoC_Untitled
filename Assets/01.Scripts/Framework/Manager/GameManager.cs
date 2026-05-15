@@ -19,6 +19,7 @@ public class GameManager : Singleton<GameManager>
 
         GameState previous = CurrentState;
         CurrentState = newState;
+        Debug.Log($"[GameManager] GameState Changed: {previous} -> {newState}");
         EventBus.Instance.Publish(new GameStateChangedEvent { PreviousState = previous, NewState = newState });
     }
 }

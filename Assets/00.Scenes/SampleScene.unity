@@ -723,6 +723,51 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &682198915
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 682198917}
+  - component: {fileID: 682198916}
+  m_Layer: 0
+  m_Name: GameFlowDebugRunner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &682198916
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 682198915}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48438e9b324a3744daff3f9ea6f9bcad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GameFlowDebugRunner
+  _autoEnterPlaying: 1
+--- !u!4 &682198917
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 682198915}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &752556373
 GameObject:
   m_ObjectHideFlags: 0
@@ -1307,63 +1352,51 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 2180568197713034615, guid: b8c8b7cb6c533bc4686070da31a27e84, type: 3}
   m_PrefabInstance: {fileID: 1874775813}
   m_PrefabAsset: {fileID: 0}
---- !u!1001 &6768351322952529565
-PrefabInstance:
+--- !u!1 &2409488607121953552
+GameObject:
   m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5389420694023302465}
+  - component: {fileID: 3741467825249959838}
+  m_Layer: 0
+  m_Name: HourglassCombatDebugRunner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &3741467825249959838
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2409488607121953552}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7fd72a81e5284f64cbddcddc148908aa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HourglassCombatDebugRunner
+  autoStartCombat: 0
+--- !u!4 &5389420694023302465
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2409488607121953552}
   serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 1667759285444320220, guid: cfd9f8ac8a18497459a6c889ee89ac76, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1667759285444320220, guid: cfd9f8ac8a18497459a6c889ee89ac76, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1667759285444320220, guid: cfd9f8ac8a18497459a6c889ee89ac76, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1667759285444320220, guid: cfd9f8ac8a18497459a6c889ee89ac76, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 1667759285444320220, guid: cfd9f8ac8a18497459a6c889ee89ac76, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1667759285444320220, guid: cfd9f8ac8a18497459a6c889ee89ac76, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1667759285444320220, guid: cfd9f8ac8a18497459a6c889ee89ac76, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1667759285444320220, guid: cfd9f8ac8a18497459a6c889ee89ac76, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1667759285444320220, guid: cfd9f8ac8a18497459a6c889ee89ac76, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1667759285444320220, guid: cfd9f8ac8a18497459a6c889ee89ac76, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8979679259215504781, guid: cfd9f8ac8a18497459a6c889ee89ac76, type: 3}
-      propertyPath: m_Name
-      value: HourglassCombatDebugRunner
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: cfd9f8ac8a18497459a6c889ee89ac76, type: 3}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &8428582153347181317
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1432,5 +1465,6 @@ SceneRoots:
   - {fileID: 752556375}
   - {fileID: 627191105}
   - {fileID: 8428582153347181317}
-  - {fileID: 6768351322952529565}
   - {fileID: 1011184991}
+  - {fileID: 682198917}
+  - {fileID: 5389420694023302465}

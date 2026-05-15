@@ -36,8 +36,8 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
         }
 
         RuntimeState.TurnState = CombatTurnState.PlayerTurn;
-        EventBus.Instance.Publish(new CombatStartedEvent(RuntimeState.Player, RuntimeState.Enemy));
-        EventBus.Instance.Publish(new CombatTurnStartedEvent(RuntimeState.TurnState));
+        EventBus.Instance.Publish(new CombatStartedEvent(CreateSnapshot()));
+        EventBus.Instance.Publish(new CombatTurnStartedEvent(CreateSnapshot()));
         Debug.Log("[Combat] Combat Started");
         Debug.Log($"[Combat] Turn Started: {RuntimeState.TurnState}");
         PublishStateDebugLog();
@@ -123,7 +123,7 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
     {
         if (actionType == CombatActionType.EndTurn)
         {
-            EventBus.Instance.Publish(new CombatActionExecutedEvent(CombatActorType.Player, actionType, 0, 0));
+            EventBus.Instance.Publish(new CombatActionExecutedEvent(CreateSnapshot(CombatActorType.Player, actionType, 0, 0)));
             Debug.Log("[Combat] Action Executed: Player EndTurn");
             EndPlayerTurn();
             return;
@@ -149,21 +149,21 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
             return;
         }
 
-        EventBus.Instance.Publish(new CombatActionExecutedEvent(CombatActorType.Player, result.ActionType, result.DamageDealt, result.SpentSand));
+        EventBus.Instance.Publish(new CombatActionExecutedEvent(CreateSnapshot(CombatActorType.Player, result.ActionType, result.SpentSand, result.DamageDealt)));
         if (result.DamageDealt > 0)
         {
-            EventBus.Instance.Publish(new CombatActorDamagedEvent(CombatActorType.Enemy, result.DamageDealt));
+            EventBus.Instance.Publish(new CombatActorDamagedEvent(CreateSnapshot(CombatActorType.Enemy, result.ActionType, result.SpentSand, result.DamageDealt)));
         }
 
         if (result.BreakTriggered)
         {
-            EventBus.Instance.Publish(new CombatBreakTriggeredEvent(CombatActorType.Enemy));
+            EventBus.Instance.Publish(new CombatBreakTriggeredEvent(CreateSnapshot(CombatActorType.Enemy, result.ActionType, result.SpentSand, result.DamageDealt)));
             Debug.Log("[Combat] Break Triggered: Enemy");
         }
 
         if (result.GroggyTriggered)
         {
-            EventBus.Instance.Publish(new CombatGroggyAppliedEvent(CombatActorType.Enemy));
+            EventBus.Instance.Publish(new CombatGroggyAppliedEvent(CreateSnapshot(CombatActorType.Enemy, result.ActionType, result.SpentSand, result.DamageDealt)));
             Debug.Log("[Combat] Groggy Applied: Enemy(Pending)");
         }
 
@@ -178,9 +178,8 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
 
     private void EndPlayerTurn()
     {
-        CombatTurnState endedTurn = RuntimeState.TurnState;
         _turnProcessor.EndTurn(RuntimeState);
-        EventBus.Instance.Publish(new CombatTurnEndedEvent(endedTurn));
+        EventBus.Instance.Publish(new CombatTurnEndedEvent(CreateSnapshot()));
         Debug.Log("[Combat] Turn Ended: PlayerTurn");
         PublishStateDebugLog();
 
@@ -190,7 +189,7 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
             return;
         }
 
-        EventBus.Instance.Publish(new CombatTurnStartedEvent(RuntimeState.TurnState));
+        EventBus.Instance.Publish(new CombatTurnStartedEvent(CreateSnapshot()));
         Debug.Log($"[Combat] Turn Started: {RuntimeState.TurnState}");
         RunEnemyTurn();
     }
@@ -274,21 +273,21 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
                 usedPrepareThisTurn = true;
             }
 
-            EventBus.Instance.Publish(new CombatActionExecutedEvent(CombatActorType.Enemy, result.ActionType, result.DamageDealt, result.SpentSand));
+            EventBus.Instance.Publish(new CombatActionExecutedEvent(CreateSnapshot(CombatActorType.Enemy, result.ActionType, result.SpentSand, result.DamageDealt)));
             if (result.DamageDealt > 0)
             {
-                EventBus.Instance.Publish(new CombatActorDamagedEvent(CombatActorType.Player, result.DamageDealt));
+                EventBus.Instance.Publish(new CombatActorDamagedEvent(CreateSnapshot(CombatActorType.Player, result.ActionType, result.SpentSand, result.DamageDealt)));
             }
 
             if (result.BreakTriggered)
             {
-                EventBus.Instance.Publish(new CombatBreakTriggeredEvent(CombatActorType.Player));
+                EventBus.Instance.Publish(new CombatBreakTriggeredEvent(CreateSnapshot(CombatActorType.Player, result.ActionType, result.SpentSand, result.DamageDealt)));
                 Debug.Log("[Combat] Break Triggered: Player");
             }
 
             if (result.GroggyTriggered)
             {
-                EventBus.Instance.Publish(new CombatGroggyAppliedEvent(CombatActorType.Player));
+                EventBus.Instance.Publish(new CombatGroggyAppliedEvent(CreateSnapshot(CombatActorType.Player, result.ActionType, result.SpentSand, result.DamageDealt)));
                 Debug.Log("[Combat] Groggy Applied: Player(Pending)");
             }
 
@@ -302,7 +301,7 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
             }
         }
 
-        EventBus.Instance.Publish(new CombatActionExecutedEvent(CombatActorType.Enemy, CombatActionType.EndTurn, 0, 0));
+        EventBus.Instance.Publish(new CombatActionExecutedEvent(CreateSnapshot(CombatActorType.Enemy, CombatActionType.EndTurn, 0, 0)));
         Debug.Log("[Combat] Action Executed: Enemy EndTurn");
 
         if (RuntimeState.Player.IsDead)
@@ -316,9 +315,8 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
 
     private void EndEnemyTurn()
     {
-        CombatTurnState endedTurn = RuntimeState.TurnState;
         _turnProcessor.EndTurn(RuntimeState);
-        EventBus.Instance.Publish(new CombatTurnEndedEvent(endedTurn));
+        EventBus.Instance.Publish(new CombatTurnEndedEvent(CreateSnapshot()));
         Debug.Log("[Combat] Turn Ended: EnemyTurn");
         PublishStateDebugLog();
 
@@ -328,7 +326,7 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
             return;
         }
 
-        EventBus.Instance.Publish(new CombatTurnStartedEvent(RuntimeState.TurnState));
+        EventBus.Instance.Publish(new CombatTurnStartedEvent(CreateSnapshot()));
         Debug.Log($"[Combat] Turn Started: {RuntimeState.TurnState}");
     }
 
@@ -341,7 +339,7 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
 
         RuntimeState.IsCombatEnded = true;
         RuntimeState.TurnState = CombatTurnState.Ended;
-        EventBus.Instance.Publish(new CombatEndedEvent(playerWon));
+        EventBus.Instance.Publish(new CombatEndedEvent(playerWon, CreateSnapshot()));
         Debug.Log($"[Combat] Combat Ended: {(playerWon ? "Victory" : "Defeat")}");
         PublishStateDebugLog();
     }
@@ -410,5 +408,53 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
 
         Debug.LogError($"[Combat] Missing required action data: {actionType}", this);
         return false;
+    }
+
+    private CombatLogSnapshot CreateSnapshot(
+        CombatActorType actor = CombatActorType.None,
+        CombatActionType actionType = CombatActionType.None,
+        int spentSand = 0,
+        int damage = 0)
+    {
+        if (RuntimeState == null || RuntimeState.Player == null || RuntimeState.Enemy == null)
+        {
+            return new CombatLogSnapshot(
+                0,
+                CombatTurnState.None,
+                actor,
+                actionType,
+                spentSand,
+                damage,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                false,
+                false);
+        }
+
+        return new CombatLogSnapshot(
+            RuntimeState.TurnIndex,
+            RuntimeState.TurnState,
+            actor,
+            actionType,
+            spentSand,
+            damage,
+            RuntimeState.Player.CurrentHp,
+            RuntimeState.Enemy.CurrentHp,
+            RuntimeState.Player.AvailableSand,
+            RuntimeState.Enemy.AvailableSand,
+            RuntimeState.Player.TransferredSand,
+            RuntimeState.Enemy.TransferredSand,
+            RuntimeState.Player.GuardValue,
+            RuntimeState.Enemy.EnemyPrepStack,
+            RuntimeState.Enemy.BreakProgress,
+            RuntimeState.Enemy.GroggyPending,
+            RuntimeState.Enemy.GroggyActive);
     }
 }

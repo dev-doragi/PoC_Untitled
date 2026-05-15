@@ -44,4 +44,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7fd72a81e5284f64cbddcddc148908aa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HourglassCombatDebugRunner
-  autoStartCombat: 1
+  autoStartCombat: 0

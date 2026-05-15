@@ -42,6 +42,7 @@ public class GameFlowManager : Singleton<GameFlowManager>
 
         InGameState previous = CurrentState;
         CurrentState = newState;
+        Debug.Log($"[GameFlowManager] InGameState Changed: {previous} -> {newState}");
         EventBus.Instance.Publish(new InGameStateChangedEvent { PreviousState = previous, NewState = newState });
 
         if (newState == InGameState.Initializing)

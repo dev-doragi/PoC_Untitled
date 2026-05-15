@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HourglassCombatConfigSO
   maxActionSand: 9
   flipTransfer: 1
-  defaultPlayerSand: 5
+  defaultPlayerSand: 6
   defaultEnemySand: 0
   breakThreshold: 8
   prepCap: 3
