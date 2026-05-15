@@ -25,8 +25,6 @@ public class CombatScreenPresenter : MonoBehaviour
     [SerializeField] private float playerGuardBarMax = 10f;
 
     private HourglassCombatManager _combatManager;
-    private CombatTurnState _lastTurnState = CombatTurnState.None;
-    private bool _hasTurnState;
 
     private void OnEnable()
     {
@@ -43,9 +41,14 @@ public class CombatScreenPresenter : MonoBehaviour
     private void Start()
     {
         CacheCombatManager();
+        if (_combatManager != null)
+        {
+            hourglassView?.SetFlipDuration(_combatManager.FlipDuration);
+        }
+
         actionPanelView?.SetStaticTexts();
         BindButtons();
-        RefreshViews(false);
+        RefreshViews();
     }
 
     private void OnDisable()
@@ -63,18 +66,30 @@ public class CombatScreenPresenter : MonoBehaviour
     private void OnCombatStarted(CombatStartedEvent evt)
     {
         combatLogView?.AddLog("Combat Started");
-        RefreshViews(true);
+        RefreshViews();
     }
 
     private void OnCombatTurnStarted(CombatTurnStartedEvent evt)
     {
         combatLogView?.AddLog(evt.Snapshot.turn_state == CombatTurnState.PlayerTurn ? "Player Turn Start" : "Enemy Turn Start");
-        RefreshViews(true);
+        RefreshViews();
     }
 
     private void OnCombatActionExecuted(CombatActionExecutedEvent evt)
     {
         combatLogView?.AddLog($"{evt.Snapshot.actor} used {evt.Snapshot.action_type}");
+
+        if (evt.Snapshot.action_type == CombatActionType.EndTurn)
+        {
+            CacheCombatManager();
+            CombatRuntimeState state = _combatManager != null ? _combatManager.RuntimeState : null;
+            if (state != null)
+            {
+                CombatActorRuntime actor = state.GetActor(evt.Snapshot.turn_state);
+                int maxActionSand = actor != null ? actor.MaxActionSand : 3;
+                hourglassView?.PrepareFlipTransferPreview(evt.Snapshot, maxActionSand, state.FlipTransfer);
+            }
+        }
 
         if (evt.Snapshot.actor == CombatActorType.Player)
         {
@@ -85,13 +100,13 @@ public class CombatScreenPresenter : MonoBehaviour
             enemyStatusView?.PlayAttackLunge(-1f);
         }
 
-        RefreshViews(true);
+        RefreshViews();
     }
 
     private void OnCombatTurnEnded(CombatTurnEndedEvent evt)
     {
         combatLogView?.AddLog($"Turn {evt.Snapshot.turn_index} End");
-        RefreshViews(true);
+        RefreshViews();
     }
 
     private void OnCombatActorDamaged(CombatActorDamagedEvent evt)
@@ -99,25 +114,25 @@ public class CombatScreenPresenter : MonoBehaviour
         CombatActorPanelView target = evt.Snapshot.actor == CombatActorType.Player ? playerStatusView : enemyStatusView;
         target?.PlayHitReaction();
         combatLogView?.AddLog($"Damage {evt.Snapshot.damage}");
-        RefreshViews(true);
+        RefreshViews();
     }
 
     private void OnCombatBreakTriggered(CombatBreakTriggeredEvent evt)
     {
         combatLogView?.AddLog("BREAK");
-        RefreshViews(true);
+        RefreshViews();
     }
 
     private void OnCombatGroggyApplied(CombatGroggyAppliedEvent evt)
     {
         combatLogView?.AddLog("GROGGY");
-        RefreshViews(true);
+        RefreshViews();
     }
 
     private void OnCombatEnded(CombatEndedEvent evt)
     {
         combatLogView?.AddLog(evt.PlayerWon ? "Victory" : "Defeat");
-        RefreshViews(true);
+        RefreshViews();
         hourglassView?.SetResultText(evt.PlayerWon);
         SetAllButtonsInteractable(false);
     }
@@ -184,7 +199,7 @@ public class CombatScreenPresenter : MonoBehaviour
         button.onClick.AddListener(action);
     }
 
-    private void RefreshViews(bool allowFlip)
+    private void RefreshViews()
     {
         CacheCombatManager();
         CombatRuntimeState state = _combatManager != null ? _combatManager.RuntimeState : null;
@@ -193,14 +208,6 @@ public class CombatScreenPresenter : MonoBehaviour
             SetAllButtonsInteractable(false);
             return;
         }
-
-        if (allowFlip && IsCombatTurn(_lastTurnState) && IsCombatTurn(state.TurnState) && _hasTurnState && _lastTurnState != state.TurnState)
-        {
-            hourglassView?.PlayFlipAnimation();
-        }
-
-        _lastTurnState = state.TurnState;
-        _hasTurnState = true;
 
         bool isPlayerTurn = state.TurnState == CombatTurnState.PlayerTurn;
         bool isEnemyTurn = state.TurnState == CombatTurnState.EnemyTurn;
@@ -277,8 +284,4 @@ public class CombatScreenPresenter : MonoBehaviour
         actionPanelView.SetEndTurnPreview(preview);
     }
 
-    private static bool IsCombatTurn(CombatTurnState turnState)
-    {
-        return turnState == CombatTurnState.PlayerTurn || turnState == CombatTurnState.EnemyTurn;
-    }
 }

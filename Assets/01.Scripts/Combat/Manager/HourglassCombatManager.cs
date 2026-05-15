@@ -16,6 +16,10 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
     [SerializeField] private CombatActorDataSO _playerData;
     [SerializeField] private CombatActorDataSO _enemyData;
     [SerializeField] private CombatActionDataSO[] _actionDatas;
+    [SerializeField] private float _flipDuration = 0.45f;
+    [SerializeField] private float _enemyTurnStartDelay = 0.4f;
+    [SerializeField] private float _enemyActionDelay = 0.7f;
+    [SerializeField] private float _enemyTurnEndDelay = 0.35f;
 
     private readonly CombatActionResolver _actionResolver = new CombatActionResolver();
     private readonly CombatTurnProcessor _turnProcessor = new CombatTurnProcessor();
@@ -23,6 +27,7 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
     private Coroutine _enemyTurnRoutine;
 
     public CombatRuntimeState RuntimeState { get; private set; }
+    public float FlipDuration => Mathf.Max(0f, _flipDuration);
 
     protected override void OnBootstrap()
     {
@@ -217,6 +222,12 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
             yield break;
         }
 
+        float turnStartWait = Mathf.Max(0f, _enemyTurnStartDelay, _flipDuration);
+        if (turnStartWait > 0f)
+        {
+            yield return new WaitForSeconds(turnStartWait);
+        }
+
         CombatActorRuntime enemy = RuntimeState.Enemy;
         CombatActionDataSO weakAttackData = GetActionData(CombatActionType.WeakAttack);
         CombatActionDataSO prepareData = GetActionData(CombatActionType.Prepare);
@@ -265,7 +276,10 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
             }
 
             EventBus.Instance.Publish(new CombatActionRequestedEvent(selectedAction));
-            yield return new WaitForSeconds(0.2f);
+            if (_enemyActionDelay > 0f)
+            {
+                yield return new WaitForSeconds(_enemyActionDelay);
+            }
 
             CombatActionDataSO actionData = GetActionData(selectedAction);
             if (actionData == null)
@@ -319,13 +333,20 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
                 yield break;
             }
 
-            float postDelay = selectedAction == CombatActionType.Prepare ? 0.45f : 0.6f;
-            yield return new WaitForSeconds(postDelay);
         }
 
-        yield return new WaitForSeconds(0.3f);
+        if (_enemyTurnEndDelay > 0f)
+        {
+            yield return new WaitForSeconds(_enemyTurnEndDelay);
+        }
+
         EventBus.Instance.Publish(new CombatActionExecutedEvent(CreateSnapshot(CombatActorType.Enemy, CombatActionType.EndTurn, 0, 0)));
         Debug.Log("[Combat] Action Executed: Enemy EndTurn");
+
+        if (_flipDuration > 0f)
+        {
+            yield return new WaitForSeconds(_flipDuration);
+        }
 
         if (RuntimeState.Player.IsDead)
         {

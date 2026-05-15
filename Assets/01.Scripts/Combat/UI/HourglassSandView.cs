@@ -17,27 +17,118 @@ public class HourglassSandView : MonoBehaviour
     [SerializeField] private TMP_Text _downerText;
     [SerializeField] private TMP_Text _turnText;
     [SerializeField] private TMP_Text _nextSandText;
-    [SerializeField] private float _flipDuration = 0.34f;
+    [SerializeField] private float _flipDuration = 0.45f;
+    [SerializeField] private float _flipAnglePerTurn = -180f;
 
     private bool _isFlipped;
-    private float _rotationZ;
     private Coroutine _flipRoutine;
     private Slider.Direction _upperBaseDirection;
     private Slider.Direction _downerBaseDirection;
+    private bool _isFlipTransitionRunning;
+    private bool _hasPendingFlipPreview;
+    private CombatTurnState _previewTurnState;
+    private CombatRuntimeState _queuedStateDuringFlip;
 
     private void Awake()
     {
-        if (_rotatingVisualRoot != null)
-        {
-            _rotationZ = _rotatingVisualRoot.localEulerAngles.z;
-        }
-
         _upperBaseDirection = _upperSlider != null ? _upperSlider.direction : Slider.Direction.BottomToTop;
         _downerBaseDirection = _downerSlider != null ? _downerSlider.direction : Slider.Direction.BottomToTop;
         ApplySliderDirection();
     }
 
     public void Refresh(CombatRuntimeState state)
+    {
+        if (state == null)
+        {
+            return;
+        }
+
+        if (_isFlipTransitionRunning)
+        {
+            _queuedStateDuringFlip = state;
+            return;
+        }
+
+        if (_hasPendingFlipPreview && IsCombatTurn(_previewTurnState) && IsCombatTurn(state.TurnState) && _previewTurnState != state.TurnState)
+        {
+            if (_flipRoutine != null)
+            {
+                StopCoroutine(_flipRoutine);
+            }
+
+            _flipRoutine = StartCoroutine(FlipRoutine(state));
+            return;
+        }
+
+        ApplyState(state);
+    }
+
+    public void SetFlipDuration(float duration)
+    {
+        _flipDuration = Mathf.Clamp(duration, 0.1f, 1.5f);
+    }
+
+    public void PrepareFlipTransferPreview(in CombatLogSnapshot snapshot, int maxActionSand, int flipTransfer)
+    {
+        if (!IsCombatTurn(snapshot.turn_state))
+        {
+            return;
+        }
+
+        _hasPendingFlipPreview = true;
+        _previewTurnState = snapshot.turn_state;
+        _queuedStateDuringFlip = null;
+
+        int transferred = snapshot.turn_state == CombatTurnState.PlayerTurn
+            ? snapshot.player_transferred_sand
+            : snapshot.enemy_transferred_sand;
+        int available = snapshot.turn_state == CombatTurnState.PlayerTurn
+            ? snapshot.player_available_sand
+            : snapshot.enemy_available_sand;
+
+        int safeMax = Mathf.Max(1, maxActionSand);
+        int previewValue = Mathf.Max(0, transferred + Mathf.Max(0, flipTransfer));
+
+        if (_upperSlider != null)
+        {
+            _upperSlider.minValue = 0f;
+            _upperSlider.maxValue = safeMax;
+            _upperSlider.value = Mathf.Clamp(available, 0, safeMax);
+            _upperSlider.interactable = false;
+        }
+
+        if (_downerSlider != null)
+        {
+            _downerSlider.minValue = 0f;
+            _downerSlider.maxValue = Mathf.Max(safeMax, previewValue);
+            _downerSlider.value = Mathf.Clamp(transferred, 0, _downerSlider.maxValue);
+            _downerSlider.interactable = false;
+            _downerSlider.DOKill();
+            _downerSlider.DOValue(previewValue, 0.2f).SetEase(Ease.OutQuad);
+        }
+
+        if (_downerText != null)
+        {
+            _downerText.text = transferred.ToString();
+        }
+
+        if (_nextSandText != null)
+        {
+            _nextSandText.text = $"FLIP +{Mathf.Max(0, flipTransfer)}";
+        }
+    }
+
+    public void SetResultText(bool playerWon)
+    {
+        if (_turnText == null)
+        {
+            return;
+        }
+
+        _turnText.text = playerWon ? "YOU WIN!" : "YOU LOSE!";
+    }
+
+    private void ApplyState(CombatRuntimeState state)
     {
         if (state == null)
         {
@@ -100,16 +191,6 @@ public class HourglassSandView : MonoBehaviour
         SetNextSandText(state, transferred);
     }
 
-    public void SetResultText(bool playerWon)
-    {
-        if (_turnText == null)
-        {
-            return;
-        }
-
-        _turnText.text = playerWon ? "YOU WIN!" : "YOU LOSE!";
-    }
-
     public void PlayFlipAnimation()
     {
         if (_flipRoutine != null)
@@ -117,11 +198,13 @@ public class HourglassSandView : MonoBehaviour
             StopCoroutine(_flipRoutine);
         }
 
-        _flipRoutine = StartCoroutine(FlipRoutine());
+        _flipRoutine = StartCoroutine(FlipRoutine(null));
     }
 
-    private IEnumerator FlipRoutine()
+    private IEnumerator FlipRoutine(CombatRuntimeState nextState)
     {
+        _isFlipTransitionRunning = true;
+
         if (_hourglassTextCanvasGroup != null)
         {
             _hourglassTextCanvasGroup.alpha = 0f;
@@ -129,8 +212,8 @@ public class HourglassSandView : MonoBehaviour
 
         if (_rotatingVisualRoot != null)
         {
-            _rotationZ += 180f;
-            Tween tween = _rotatingVisualRoot.DOLocalRotate(new Vector3(0f, 0f, _rotationZ), Mathf.Clamp(_flipDuration, 0.1f, 1f), RotateMode.FastBeyond360)
+            _rotatingVisualRoot.DOKill();
+            Tween tween = _rotatingVisualRoot.DOLocalRotate(new Vector3(0f, 0f, _flipAnglePerTurn), Mathf.Clamp(_flipDuration, 0.1f, 1f), RotateMode.LocalAxisAdd)
                 .SetEase(Ease.OutCubic);
             yield return tween.WaitForCompletion();
         }
@@ -138,11 +221,20 @@ public class HourglassSandView : MonoBehaviour
         _isFlipped = !_isFlipped;
         ApplySliderDirection();
 
+        CombatRuntimeState stateToApply = _queuedStateDuringFlip != null ? _queuedStateDuringFlip : nextState;
+        _queuedStateDuringFlip = null;
+        _hasPendingFlipPreview = false;
+        if (stateToApply != null)
+        {
+            ApplyState(stateToApply);
+        }
+
         if (_hourglassTextCanvasGroup != null)
         {
             _hourglassTextCanvasGroup.alpha = 1f;
         }
 
+        _isFlipTransitionRunning = false;
         _flipRoutine = null;
     }
 
@@ -226,5 +318,10 @@ public class HourglassSandView : MonoBehaviour
             default:
                 return source;
         }
+    }
+
+    private static bool IsCombatTurn(CombatTurnState turnState)
+    {
+        return turnState == CombatTurnState.PlayerTurn || turnState == CombatTurnState.EnemyTurn;
     }
 }
