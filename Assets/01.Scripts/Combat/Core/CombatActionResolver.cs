@@ -62,7 +62,14 @@ public class CombatActionResolver
         if (actionType == CombatActionType.Strike)
         {
             int damage = ApplyDamage(target, actionData.baseDamage);
-            return new CombatActionResult(actionType, true, cost, damage, false, false);
+            bool breakTriggered = ApplyBreak(target, actionData.breakPower, breakThreshold);
+            bool groggyTriggered = ApplyGroggy(target, breakTriggered);
+            if (breakTriggered)
+            {
+                target.EnemyPrepStack = 0;
+            }
+
+            return new CombatActionResult(actionType, true, cost, damage, breakTriggered, groggyTriggered);
         }
 
         if (actionType == CombatActionType.Pierce)
@@ -70,6 +77,11 @@ public class CombatActionResolver
             int damage = ApplyDamage(target, actionData.baseDamage);
             bool breakTriggered = ApplyBreak(target, actionData.breakPower, breakThreshold);
             bool groggyTriggered = ApplyGroggy(target, breakTriggered);
+            if (breakTriggered)
+            {
+                target.EnemyPrepStack = 0;
+            }
+
             return new CombatActionResult(actionType, true, cost, damage, breakTriggered, groggyTriggered);
         }
 
@@ -78,6 +90,11 @@ public class CombatActionResolver
             int damage = ApplyDamage(target, actionData.baseDamage);
             bool breakTriggered = ApplyBreak(target, actionData.breakPower, breakThreshold);
             bool groggyTriggered = ApplyGroggy(target, breakTriggered);
+            if (breakTriggered)
+            {
+                target.EnemyPrepStack = 0;
+            }
+
             target.EnemyPrepStack = target.EnemyPrepStack > 0 ? target.EnemyPrepStack - 1 : 0;
             return new CombatActionResult(actionType, true, cost, damage, breakTriggered, groggyTriggered);
         }
@@ -119,9 +136,7 @@ public class CombatActionResolver
         const int spent = 1;
         int damage = ApplyDamage(target, actionData.baseDamage + source.EnemyPrepStack);
         source.EnemyPrepStack = 0;
-        bool breakTriggered = ApplyBreak(target, actionData.breakPower, breakThreshold);
-        bool groggyTriggered = ApplyGroggy(target, breakTriggered);
-        return new CombatActionResult(CombatActionType.DesperationStrike, true, spent, damage, breakTriggered, groggyTriggered);
+        return new CombatActionResult(CombatActionType.DesperationStrike, true, spent, damage, false, false);
     }
 
     private static int ApplyDamage(CombatActorRuntime target, int rawDamage)

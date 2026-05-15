@@ -9,6 +9,12 @@ public class HourglassCombatDebugRunner : MonoBehaviour
 
     private void Start()
     {
+        if (autoStartCombat && FindAnyObjectByType<GameFlowDebugRunner>() != null)
+        {
+            autoStartCombat = false;
+            Debug.LogWarning("[HourglassCombatDebugRunner] GameFlowDebugRunner detected. autoStartCombat forced to false to prevent duplicate StartCombat.", this);
+        }
+
         if (!autoStartCombat)
         {
             return;

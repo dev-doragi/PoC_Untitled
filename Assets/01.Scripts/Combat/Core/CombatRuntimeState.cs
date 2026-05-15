@@ -9,6 +9,8 @@ public class CombatRuntimeState
     public CombatActorRuntime Enemy;
     public bool IsCombatEnded;
     public int FlipTransfer;
+    public int MaxTransferSand;
+    public int MinimumTurnSand;
     public int BreakThreshold;
     public int PrepCap;
     public float GroggyIncomingSandMultiplier;

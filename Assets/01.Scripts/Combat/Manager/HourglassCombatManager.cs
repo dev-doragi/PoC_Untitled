@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Collections;
 using UnityEngine;
 
 /// <summary>
@@ -19,6 +20,7 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
     private readonly CombatActionResolver _actionResolver = new CombatActionResolver();
     private readonly CombatTurnProcessor _turnProcessor = new CombatTurnProcessor();
     private readonly Dictionary<CombatActionType, CombatActionDataSO> _actionDataByType = new Dictionary<CombatActionType, CombatActionDataSO>();
+    private Coroutine _enemyTurnRoutine;
 
     public CombatRuntimeState RuntimeState { get; private set; }
 
@@ -105,6 +107,8 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
             TurnState = CombatTurnState.None,
             IsCombatEnded = false,
             FlipTransfer = _config.flipTransfer,
+            MaxTransferSand = _config.maxTransferSand,
+            MinimumTurnSand = _config.minimumTurnSand,
             BreakThreshold = _config.breakThreshold,
             PrepCap = _config.prepCap,
             GroggyIncomingSandMultiplier = _config.groggyIncomingSandMultiplier,
@@ -116,6 +120,13 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
         {
             Debug.LogError("[Combat] Failed to create actor runtime from actor data.", this);
             RuntimeState = null;
+            return;
+        }
+
+        int expectedMaxActionSand = RuntimeState.MaxTransferSand - RuntimeState.FlipTransfer;
+        if (RuntimeState.Player.MaxActionSand != expectedMaxActionSand || RuntimeState.Enemy.MaxActionSand != expectedMaxActionSand)
+        {
+            Debug.LogWarning($"[Combat] Config warning: MaxActionSand({RuntimeState.Player.MaxActionSand}) does not match MaxTransferSand({RuntimeState.MaxTransferSand}) - FlipTransfer({RuntimeState.FlipTransfer}) = {expectedMaxActionSand}.");
         }
     }
 
@@ -191,14 +202,19 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
 
         EventBus.Instance.Publish(new CombatTurnStartedEvent(CreateSnapshot()));
         Debug.Log($"[Combat] Turn Started: {RuntimeState.TurnState}");
-        RunEnemyTurn();
+        if (_enemyTurnRoutine != null)
+        {
+            StopCoroutine(_enemyTurnRoutine);
+        }
+
+        _enemyTurnRoutine = StartCoroutine(RunEnemyTurnSequence());
     }
 
-    private void RunEnemyTurn()
+    private IEnumerator RunEnemyTurnSequence()
     {
         if (RuntimeState.IsCombatEnded || RuntimeState.TurnState != CombatTurnState.EnemyTurn)
         {
-            return;
+            yield break;
         }
 
         CombatActorRuntime enemy = RuntimeState.Enemy;
@@ -247,6 +263,9 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
             {
                 break;
             }
+
+            EventBus.Instance.Publish(new CombatActionRequestedEvent(selectedAction));
+            yield return new WaitForSeconds(0.2f);
 
             CombatActionDataSO actionData = GetActionData(selectedAction);
             if (actionData == null)
@@ -297,20 +316,25 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
             if (RuntimeState.Player.IsDead)
             {
                 EndCombat(false);
-                return;
+                yield break;
             }
+
+            float postDelay = selectedAction == CombatActionType.Prepare ? 0.45f : 0.6f;
+            yield return new WaitForSeconds(postDelay);
         }
 
+        yield return new WaitForSeconds(0.3f);
         EventBus.Instance.Publish(new CombatActionExecutedEvent(CreateSnapshot(CombatActorType.Enemy, CombatActionType.EndTurn, 0, 0)));
         Debug.Log("[Combat] Action Executed: Enemy EndTurn");
 
         if (RuntimeState.Player.IsDead)
         {
             EndCombat(false);
-            return;
+            yield break;
         }
 
         EndEnemyTurn();
+        _enemyTurnRoutine = null;
     }
 
     private void EndEnemyTurn()
@@ -354,6 +378,36 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
         Debug.Log($"[Combat] HP Changed - Player:{RuntimeState.Player.CurrentHp}/{RuntimeState.Player.MaxHp}, Enemy:{RuntimeState.Enemy.CurrentHp}/{RuntimeState.Enemy.MaxHp}");
         Debug.Log($"[Combat] flip transfer:{RuntimeState.FlipTransfer} | Sand Changed - Player A:{RuntimeState.Player.AvailableSand} T:{RuntimeState.Player.TransferredSand}, Enemy A:{RuntimeState.Enemy.AvailableSand} T:{RuntimeState.Enemy.TransferredSand}");
         Debug.Log($"[Combat] State - TurnIndex:{RuntimeState.TurnIndex} TurnState:{RuntimeState.TurnState} PlayerGuardValue:{RuntimeState.Player.GuardValue} EnemyPrepStack:{RuntimeState.Enemy.EnemyPrepStack} EnemyBreakProgress:{RuntimeState.Enemy.BreakProgress} EnemyGroggyPending:{RuntimeState.Enemy.GroggyPending} EnemyGroggyActive:{RuntimeState.Enemy.GroggyActive}");
+        ValidateRuntimeInvariants();
+    }
+
+    private void ValidateRuntimeInvariants()
+    {
+        if (RuntimeState.Player.AvailableSand < 0 || RuntimeState.Enemy.AvailableSand < 0)
+        {
+            Debug.LogWarning("[Combat] Invariant warning: AvailableSand < 0 detected.");
+        }
+
+        if (RuntimeState.Player.TransferredSand > RuntimeState.Player.MaxActionSand || RuntimeState.Enemy.TransferredSand > RuntimeState.Enemy.MaxActionSand)
+        {
+            Debug.LogWarning("[Combat] Invariant warning: TransferredSand > MaxActionSand detected.");
+        }
+
+        if (RuntimeState.Player.TransferredSand + RuntimeState.FlipTransfer > RuntimeState.MaxTransferSand
+            || RuntimeState.Enemy.TransferredSand + RuntimeState.FlipTransfer > RuntimeState.MaxTransferSand)
+        {
+            Debug.LogWarning("[Combat] Invariant warning: TransferredSand + FlipTransfer > MaxTransferSand detected.");
+        }
+
+        if (RuntimeState.Enemy.EnemyPrepStack > RuntimeState.PrepCap)
+        {
+            Debug.LogWarning("[Combat] Invariant warning: EnemyPrepStack > PrepCap detected.");
+        }
+
+        if (RuntimeState.Enemy.BreakProgress < 0)
+        {
+            Debug.LogWarning("[Combat] Invariant warning: BreakProgress < 0 detected.");
+        }
     }
 
     private CombatActionDataSO GetActionData(CombatActionType actionType)

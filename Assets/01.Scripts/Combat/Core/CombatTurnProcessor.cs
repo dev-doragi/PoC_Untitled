@@ -1,3 +1,5 @@
+using UnityEngine;
+
 /// <summary>
 /// Applies turn-end updates for hourglass combat state.
 /// </summary>
@@ -19,7 +21,12 @@ public class CombatTurnProcessor
 
         int transferAmount = endingActor.TransferredSand + runtimeState.FlipTransfer;
         bool applyGroggyReduction = receivingActor.GroggyActive || receivingActor.GroggyPending;
-        receivingActor.ReceiveSand(transferAmount, applyGroggyReduction, runtimeState.GroggyIncomingSandMultiplier);
+        int received = receivingActor.ReceiveSand(transferAmount, applyGroggyReduction, runtimeState.GroggyIncomingSandMultiplier);
+        int clamped = Mathf.Clamp(
+            received,
+            Mathf.Max(1, runtimeState.MinimumTurnSand),
+            Mathf.Max(1, runtimeState.MaxTransferSand));
+        receivingActor.AvailableSand = clamped;
         endingActor.AvailableSand = 0;
         endingActor.ConsumeTurnSand();
 
