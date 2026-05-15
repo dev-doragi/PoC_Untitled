@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections;
 
-[DefaultExecutionOrder(-790)]
+[DefaultExecutionOrder(-77)]
 public class SceneLoader : Singleton<SceneLoader>
 {
     private bool _isLoading;

@@ -1,19 +1,20 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-[DefaultExecutionOrder(-820)]
+[DefaultExecutionOrder(-78)]
 [RequireComponent(typeof(PlayerInput))]
 public class InputReader : Singleton<InputReader>
 {
     [Header("Action Maps")]
     [SerializeField] private string _playerActionMapName = "Player";
     [SerializeField] private string _uiActionMapName = "UI";
+    [SerializeField] private string _systemActionMapName = "System";
 
     [Header("Player Actions")]
     [SerializeField] private string _moveActionName = "Move";
     [SerializeField] private string _lookActionName = "Look";
-    [SerializeField] private string _primaryActionName = "PrimaryAction";
-    [SerializeField] private string _secondaryActionName = "SecondaryAction";
+    [SerializeField] private string _primaryActionName = "PrimaryAttack";
+    [SerializeField] private string _secondaryActionName = "SecondaryAttack";
 
     [Header("UI/System Actions")]
     [SerializeField] private string _submitActionName = "Submit";
@@ -23,6 +24,7 @@ public class InputReader : Singleton<InputReader>
     private PlayerInput _playerInput;
     private InputActionMap _playerMap;
     private InputActionMap _uiMap;
+    private InputActionMap _systemMap;
 
     private InputAction _move;
     private InputAction _look;
@@ -43,10 +45,11 @@ public class InputReader : Singleton<InputReader>
 
         _playerMap = _playerInput.actions.FindActionMap(_playerActionMapName, false);
         _uiMap = _playerInput.actions.FindActionMap(_uiActionMapName, false);
+        _systemMap = _playerInput.actions.FindActionMap(_systemActionMapName, false);
 
-        if (_playerMap == null || _uiMap == null)
+        if (_playerMap == null || _uiMap == null || _systemMap == null)
         {
-            Debug.LogError("[InputReader] Required action map is missing. Expected: Player/UI", this);
+            Debug.LogError("[InputReader] Required action map is missing. Expected: Player/UI/System", this);
             return;
         }
 
@@ -56,11 +59,16 @@ public class InputReader : Singleton<InputReader>
         _secondary = RequireAction(_playerMap, _secondaryActionName);
         _submit = RequireAction(_uiMap, _submitActionName);
         _cancel = RequireAction(_uiMap, _cancelActionName);
-        _pause = RequireAction(_uiMap, _pauseActionName);
+        _pause = RequireAction(_systemMap, _pauseActionName);
+        if (_move == null || _look == null || _primary == null || _secondary == null || _submit == null || _cancel == null || _pause == null)
+        {
+            return;
+        }
 
         Bind();
         _playerMap.Enable();
         _uiMap.Enable();
+        _systemMap.Enable();
 
         _playerInput.onControlsChanged += OnControlsChanged;
     }
@@ -76,6 +84,7 @@ public class InputReader : Singleton<InputReader>
 
         _playerMap?.Disable();
         _uiMap?.Disable();
+        _systemMap?.Disable();
     }
 
     private InputAction RequireAction(InputActionMap map, string actionName)

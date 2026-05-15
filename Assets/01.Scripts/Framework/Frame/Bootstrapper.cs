@@ -1,6 +1,6 @@
 using UnityEngine;
 
-[DefaultExecutionOrder(-1000)]
+[DefaultExecutionOrder(-100)]
 public class Bootstrapper : MonoBehaviour
 {
     [Header("Strict Validation")]
@@ -13,10 +13,9 @@ public class Bootstrapper : MonoBehaviour
     [SerializeField] private SceneLoader _sceneLoaderPrefab;
     [SerializeField] private TimeManager _timeManagerPrefab;
     [SerializeField] private PauseManager _pauseManagerPrefab;
-    [SerializeField] private UIManager _uiManagerPrefab;
     [SerializeField] private SoundManager _soundManagerPrefab;
-    [SerializeField] private CameraManager _cameraManagerPrefab;
     [SerializeField] private PoolManager _poolManagerPrefab;
+    [SerializeField] private HourglassCombatManager _hourglassCombatManagerPrefab;
 
     private void Awake()
     {
@@ -28,37 +27,50 @@ public class Bootstrapper : MonoBehaviour
         EnsureInstance(_sceneLoaderPrefab);
         EnsureInstance(_timeManagerPrefab);
         EnsureInstance(_pauseManagerPrefab);
-        EnsureInstance(_uiManagerPrefab);
         EnsureInstance(_soundManagerPrefab);
-        EnsureInstance(_cameraManagerPrefab);
         EnsureInstance(_poolManagerPrefab);
+        EnsureInstance(_hourglassCombatManagerPrefab);
+    }
 
+    private void Start()
+    {
         BootstrapManagers();
     }
 
     private void BootstrapManagers()
     {
-        BootstrapRequired(GameManager.Instance, nameof(GameManager));
-        BootstrapRequired(GameFlowManager.Instance, nameof(GameFlowManager));
-        BootstrapRequired(InputReader.Instance, nameof(InputReader));
-        BootstrapRequired(SceneLoader.Instance, nameof(SceneLoader));
-        BootstrapRequired(TimeManager.Instance, nameof(TimeManager));
-        BootstrapRequired(PauseManager.Instance, nameof(PauseManager));
-        BootstrapRequired(UIManager.Instance, nameof(UIManager));
-        BootstrapRequired(SoundManager.Instance, nameof(SoundManager));
-        BootstrapRequired(CameraManager.Instance, nameof(CameraManager));
-        BootstrapRequired(PoolManager.Instance, nameof(PoolManager));
+        bool success = true;
+
+        success &= BootstrapRequired(GameManager.Instance, nameof(GameManager));
+        success &= BootstrapRequired(GameFlowManager.Instance, nameof(GameFlowManager));
+        success &= BootstrapRequired(InputReader.Instance, nameof(InputReader));
+        success &= BootstrapRequired(SceneLoader.Instance, nameof(SceneLoader));
+        success &= BootstrapRequired(TimeManager.Instance, nameof(TimeManager));
+        success &= BootstrapRequired(PauseManager.Instance, nameof(PauseManager));
+        success &= BootstrapRequired(SoundManager.Instance, nameof(SoundManager));
+        success &= BootstrapRequired(PoolManager.Instance, nameof(PoolManager));
+        success &= BootstrapRequired(HourglassCombatManager.Instance, nameof(HourglassCombatManager));
+
+        if (success)
+        {
+            Debug.Log("<color=green>[Bootstrapper]</color> manager bootstrapping completed.");
+        }
+        else
+        {
+            Debug.LogWarning("<color=yellow>[Bootstrapper]</color> manager bootstrapping completed with missing managers.");
+        }
     }
 
-    private void BootstrapRequired(ISingletonBootstrap manager, string managerName)
+    private bool BootstrapRequired(ISingletonBootstrap manager, string managerName)
     {
         if (manager == null)
         {
             Debug.LogError($"[Bootstrapper] Missing required manager instance: {managerName}", this);
-            return;
+            return false;
         }
 
         manager.BootstrapIfNeeded();
+        return true;
     }
 
     private void ValidateRequiredPrefabs()
@@ -74,10 +86,11 @@ public class Bootstrapper : MonoBehaviour
         ValidateRequiredPrefab(_sceneLoaderPrefab, nameof(_sceneLoaderPrefab));
         ValidateRequiredPrefab(_timeManagerPrefab, nameof(_timeManagerPrefab));
         ValidateRequiredPrefab(_pauseManagerPrefab, nameof(_pauseManagerPrefab));
-        ValidateRequiredPrefab(_uiManagerPrefab, nameof(_uiManagerPrefab));
+        //ValidateRequiredPrefab(_uiManagerPrefab, nameof(_uiManagerPrefab));
         ValidateRequiredPrefab(_soundManagerPrefab, nameof(_soundManagerPrefab));
-        ValidateRequiredPrefab(_cameraManagerPrefab, nameof(_cameraManagerPrefab));
+        //ValidateRequiredPrefab(_cameraManagerPrefab, nameof(_cameraManagerPrefab));
         ValidateRequiredPrefab(_poolManagerPrefab, nameof(_poolManagerPrefab));
+        ValidateRequiredPrefab(_hourglassCombatManagerPrefab, nameof(_hourglassCombatManagerPrefab));
     }
 
     private void ValidateRequiredPrefab(Object prefab, string fieldName)

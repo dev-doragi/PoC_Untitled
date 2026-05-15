@@ -1,6 +1,6 @@
 using UnityEngine;
 
-[DefaultExecutionOrder(-795)]
+[DefaultExecutionOrder(-79)]
 public class GameFlowManager : Singleton<GameFlowManager>
 {
     public InGameState CurrentState { get; private set; } = InGameState.None;
@@ -8,6 +8,7 @@ public class GameFlowManager : Singleton<GameFlowManager>
     protected override void OnBootstrap()
     {
         EventBus.Instance.Subscribe<GameStateChangedEvent>(OnGameStateChanged);
+        EventBus.Instance.Subscribe<CombatEndedEvent>(OnCombatEnded);
 
         if (GameManager.Instance != null && GameManager.Instance.CurrentState == GameState.Playing)
         {
@@ -18,6 +19,7 @@ public class GameFlowManager : Singleton<GameFlowManager>
     private void OnDisable()
     {
         EventBus.Instance.Unsubscribe<GameStateChangedEvent>(OnGameStateChanged);
+        EventBus.Instance.Unsubscribe<CombatEndedEvent>(OnCombatEnded);
     }
 
     public bool TryChangeState(InGameState newState)
@@ -41,6 +43,17 @@ public class GameFlowManager : Singleton<GameFlowManager>
         InGameState previous = CurrentState;
         CurrentState = newState;
         EventBus.Instance.Publish(new InGameStateChangedEvent { PreviousState = previous, NewState = newState });
+
+        if (newState == InGameState.Initializing)
+        {
+            if (HourglassCombatManager.Instance == null)
+            {
+                Debug.LogError("[GameFlowManager] HourglassCombatManager instance is missing.", this);
+                return;
+            }
+
+            HourglassCombatManager.Instance.StartCombat();
+        }
     }
 
     private bool CanEnterState(InGameState nextState)
@@ -81,5 +94,15 @@ public class GameFlowManager : Singleton<GameFlowManager>
         {
             ChangeState(InGameState.None);
         }
+    }
+
+    private void OnCombatEnded(CombatEndedEvent evt)
+    {
+        if (CurrentState == InGameState.None)
+        {
+            return;
+        }
+
+        ChangeState(evt.PlayerWon ? InGameState.Completed : InGameState.Failed);
     }
 }

@@ -6,7 +6,7 @@ public interface ISingletonBootstrap
     void BootstrapIfNeeded();
 }
 
-[DefaultExecutionOrder(-900)]
+[DefaultExecutionOrder(-90)]
 public abstract class Singleton<T> : MonoBehaviour, ISingletonBootstrap where T : MonoBehaviour
 {
     [SerializeField] protected bool _isDontDestroyOnLoad = true;

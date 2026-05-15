@@ -1,6 +1,6 @@
 using UnityEngine;
 
-[DefaultExecutionOrder(-770)]
+[DefaultExecutionOrder(-75)]
 public class PauseManager : Singleton<PauseManager>
 {
     protected override void OnBootstrap()

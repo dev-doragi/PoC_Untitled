@@ -1,6 +1,6 @@
 using UnityEngine;
 
-[DefaultExecutionOrder(-800)]
+[DefaultExecutionOrder(-80)]
 public class GameManager : Singleton<GameManager>
 {
     public GameState CurrentState { get; private set; } = GameState.None;

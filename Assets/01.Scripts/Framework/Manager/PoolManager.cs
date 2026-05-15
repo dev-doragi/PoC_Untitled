@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Pool;
 
-[DefaultExecutionOrder(-740)]
+[DefaultExecutionOrder(-71)]
 public class PoolManager : Singleton<PoolManager>
 {
     [SerializeField] private Transform _poolRoot;

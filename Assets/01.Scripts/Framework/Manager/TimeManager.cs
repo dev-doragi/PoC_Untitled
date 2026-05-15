@@ -1,6 +1,6 @@
 using UnityEngine;
 
-[DefaultExecutionOrder(-780)]
+[DefaultExecutionOrder(-76)]
 public class TimeManager : Singleton<TimeManager>
 {
     [SerializeField, Range(0f, 1f)] private float _defaultHitStopTimeScale = 0.15f;

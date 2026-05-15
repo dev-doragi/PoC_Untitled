@@ -1,7 +1,7 @@
 using Unity.Cinemachine;
 using UnityEngine;
 
-[DefaultExecutionOrder(-730)]
+[DefaultExecutionOrder(-72)]
 public class CameraManager : Singleton<CameraManager>
 {
     [SerializeField] private Camera _mainCamera;

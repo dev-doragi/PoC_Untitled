@@ -1,6 +1,6 @@
 using UnityEngine;
 
-[DefaultExecutionOrder(-750)]
+[DefaultExecutionOrder(-73)]
 public class SoundManager : Singleton<SoundManager>
 {
     [SerializeField] private AudioSource _bgmSource;

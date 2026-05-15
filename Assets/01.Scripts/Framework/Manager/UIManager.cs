@@ -1,6 +1,6 @@
 using UnityEngine;
 
-[DefaultExecutionOrder(-760)]
+[DefaultExecutionOrder(-74)]
 public class UIManager : Singleton<UIManager>
 {
     [Header("Panels")]
