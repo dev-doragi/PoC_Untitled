@@ -14,6 +14,8 @@ public class CombatScreenPresenter : MonoBehaviour
     [SerializeField] private CombatLogView combatLogView;
     [SerializeField] private CombatFeedbackView combatFeedbackView;
     [SerializeField] private CombatActionPanelView actionPanelView;
+    [SerializeField] private SpriteRenderer playerSpriteRenderer;
+    [SerializeField] private SpriteRenderer enemySpriteRenderer;
 
     [Header("Action Costs")]
     [SerializeField] private int strikeCost = 3;
@@ -214,6 +216,7 @@ public class CombatScreenPresenter : MonoBehaviour
 
         playerStatusView?.ApplyPlayerState(state.Player, isPlayerTurn, Mathf.Max(1f, playerGuardBarMax));
         enemyStatusView?.ApplyEnemyState(state.Enemy, state.BreakThreshold, state.PrepCap, isEnemyTurn);
+        UpdateActorSpriteVisibility(state);
         hourglassView?.Refresh(state);
         UpdateEndTurnPreview(state);
         UpdateActionButtons(state);
@@ -282,6 +285,24 @@ public class CombatScreenPresenter : MonoBehaviour
         }
 
         actionPanelView.SetEndTurnPreview(preview);
+    }
+
+    private void UpdateActorSpriteVisibility(CombatRuntimeState state)
+    {
+        if (state == null)
+        {
+            return;
+        }
+
+        if (playerSpriteRenderer != null)
+        {
+            playerSpriteRenderer.gameObject.SetActive(state.Player != null && state.Player.CurrentHp > 0);
+        }
+
+        if (enemySpriteRenderer != null)
+        {
+            enemySpriteRenderer.gameObject.SetActive(state.Enemy != null && state.Enemy.CurrentHp > 0);
+        }
     }
 
 }
