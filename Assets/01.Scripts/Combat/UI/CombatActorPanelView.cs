@@ -4,165 +4,159 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Panel view for either player or enemy state with turn emphasis and hit/attack feedback.
+/// Renders player or enemy status widgets and lightweight actor feedback animations.
 /// </summary>
 public class CombatActorPanelView : MonoBehaviour
 {
-    [SerializeField] private RectTransform _panelRoot;
     [SerializeField] private RectTransform _motionRoot;
     [SerializeField] private RectTransform _popupAnchor;
-    [SerializeField] private Image _background;
     [SerializeField] private Image _border;
     [SerializeField] private Image _hitFlash;
-    [SerializeField] private TMP_Text _nameText;
     [SerializeField] private TMP_Text _hpText;
-    [SerializeField] private TMP_Text _line1Text;
-    [SerializeField] private TMP_Text _line2Text;
-    [SerializeField] private TMP_Text _line3Text;
+    [SerializeField] private Slider _hpBar;
+    [SerializeField] private TMP_Text _guardText;
+    [SerializeField] private Slider _guardBar;
+    [SerializeField] private Slider _prepBar;
+    [SerializeField] private TMP_Text _groggyText;
     [SerializeField] private TMP_Text _warningText;
-    [SerializeField] private GameObject _groggyBadge;
+    [SerializeField] private TMP_Text[] _turnTintTexts;
+    [SerializeField] private Color _turnHighlightColor = new Color(1f, 0.88f, 0.2f, 1f);
 
-    private bool _isPlayer;
-    private Color _baseColor;
-    private Color _accentColor;
-    private Vector2 _basePos;
+    private Vector2 _baseMotionPos;
+    private Color _normalBorderColor = Color.white;
+    private Color _normalTextColor = Color.white;
+    private bool _visualCached;
 
-    public RectTransform PopupAnchor => _popupAnchor != null ? _popupAnchor : _panelRoot;
+    public RectTransform PopupAnchor => _popupAnchor != null ? _popupAnchor : transform as RectTransform;
 
-    public void BuildRuntimeChildren(TMP_FontAsset font)
+    private void Awake()
     {
-        _panelRoot = transform as RectTransform;
-
-        GameObject border = CreateRect("Border", _panelRoot, Vector2.zero, Vector2.one);
-        _border = border.AddComponent<Image>();
-
-        GameObject motion = CreateRect("MotionRoot", _panelRoot, new Vector2(0.03f, 0.03f), new Vector2(0.97f, 0.97f));
-        _motionRoot = motion.transform as RectTransform;
-
-        _background = motion.AddComponent<Image>();
-        _hitFlash = CreateRect("HitFlash", _motionRoot, Vector2.zero, Vector2.one).AddComponent<Image>();
-
-        _nameText = CreateText("Name", _motionRoot, new Vector2(0.05f, 0.83f), new Vector2(0.95f, 0.97f), font, 31f, FontStyles.Bold, TextAlignmentOptions.MidlineLeft, "ACTOR");
-        _hpText = CreateText("HP", _motionRoot, new Vector2(0.05f, 0.67f), new Vector2(0.95f, 0.82f), font, 27f, FontStyles.Bold, TextAlignmentOptions.MidlineLeft, "HP");
-        _line1Text = CreateText("Line1", _motionRoot, new Vector2(0.05f, 0.50f), new Vector2(0.95f, 0.66f), font, 23f, FontStyles.Normal, TextAlignmentOptions.MidlineLeft, "");
-        _line2Text = CreateText("Line2", _motionRoot, new Vector2(0.05f, 0.34f), new Vector2(0.95f, 0.49f), font, 23f, FontStyles.Normal, TextAlignmentOptions.MidlineLeft, "");
-        _line3Text = CreateText("Line3", _motionRoot, new Vector2(0.05f, 0.18f), new Vector2(0.95f, 0.33f), font, 23f, FontStyles.Normal, TextAlignmentOptions.MidlineLeft, "");
-        _warningText = CreateText("Warning", _motionRoot, new Vector2(0.05f, 0.04f), new Vector2(0.95f, 0.17f), font, 20f, FontStyles.Bold, TextAlignmentOptions.MidlineLeft, "");
-
-        GameObject badgeRoot = CreateRect("GroggyBadge", _motionRoot, new Vector2(0.58f, 0.84f), new Vector2(0.95f, 0.97f));
-        Image badgeBg = badgeRoot.AddComponent<Image>();
-        badgeBg.color = new Color(0.45f, 0.9f, 1f, 0.95f);
-        TMP_Text badgeText = CreateText("BadgeText", badgeRoot.transform as RectTransform, Vector2.zero, Vector2.one, font, 20f, FontStyles.Bold, TextAlignmentOptions.Center, "GROGGY");
-        badgeText.color = new Color(0.03f, 0.08f, 0.15f, 1f);
-        _groggyBadge = badgeRoot;
-        _popupAnchor = _motionRoot;
-
-        _hitFlash.color = new Color(1f, 1f, 1f, 0f);
-        _hitFlash.raycastTarget = false;
-        _groggyBadge.SetActive(false);
+        CacheVisualDefaults();
     }
 
-    public void Initialize(bool isPlayer, string actorLabel, Color baseColor, Color accentColor, TMP_FontAsset font)
+    public void ApplyPlayerState(CombatActorRuntime player, bool isCurrentTurn, float guardBarMax)
     {
-        _isPlayer = isPlayer;
-        _baseColor = baseColor;
-        _accentColor = accentColor;
-
-        if (_nameText != null)
-        {
-            _nameText.font = font != null ? font : TMP_Settings.defaultFontAsset;
-            _nameText.text = actorLabel;
-        }
-
-        if (_background != null)
-        {
-            _background.color = new Color(baseColor.r * 0.22f + 0.07f, baseColor.g * 0.22f + 0.07f, baseColor.b * 0.22f + 0.07f, 0.94f);
-        }
-
-        if (_border != null)
-        {
-            _border.color = new Color(baseColor.r, baseColor.g, baseColor.b, 0.22f);
-        }
-
-        _basePos = _motionRoot != null ? _motionRoot.anchoredPosition : Vector2.zero;
-    }
-
-    public void ApplySnapshot(in CombatLogSnapshot s, int maxHp, bool isCurrentTurn)
-    {
-        if (_isPlayer)
-        {
-            if (_hpText != null) _hpText.text = $"HP {s.player_hp}/{Mathf.Max(1, maxHp)}";
-            if (_line1Text != null) _line1Text.text = $"GUARD {s.player_guard_value}";
-            if (_line2Text != null) _line2Text.text = string.Empty;
-            if (_line3Text != null) _line3Text.text = string.Empty;
-            if (_warningText != null) _warningText.text = string.Empty;
-            if (_groggyBadge != null) _groggyBadge.SetActive(false);
-        }
-        else
-        {
-            if (_hpText != null) _hpText.text = $"HP {s.enemy_hp}/{Mathf.Max(1, maxHp)}";
-            if (_line1Text != null) _line1Text.text = $"PREP {s.enemy_prep_stack}";
-            if (_line2Text != null) _line2Text.text = string.Empty;
-            if (_line3Text != null) _line3Text.text = string.Empty;
-            if (_groggyBadge != null) _groggyBadge.SetActive(s.enemy_groggy_active);
-        }
-
-        SetTurnHighlight(isCurrentTurn);
-    }
-
-    public void ApplyEnemyExtra(int breakThreshold, int prepCap, int prepStack, int breakProgress, bool groggyPending, bool groggyActive)
-    {
-        if (_isPlayer)
+        CacheVisualDefaults();
+        if (player == null)
         {
             return;
         }
 
-        if (_line1Text != null) _line1Text.text = $"PREP {prepStack}/{Mathf.Max(1, prepCap)}";
-        if (_line2Text != null) _line2Text.text = $"BREAK {breakProgress}/{Mathf.Max(1, breakThreshold)}";
-        if (_line3Text != null) _line3Text.text = groggyActive ? "GROGGY" : (groggyPending ? "GROGGY NEXT" : string.Empty);
-
-        if (_warningText != null && prepStack >= prepCap)
+        if (_hpText != null)
         {
-            _warningText.text = "DESPERATION DANGER";
-            _warningText.color = new Color(1f, 0.38f, 0.25f, 1f);
-        }
-        else if (_warningText != null)
-        {
-            _warningText.text = "Prep Rising";
-            _warningText.color = _accentColor;
+            _hpText.text = $"{player.CurrentHp}/{Mathf.Max(1, player.MaxHp)}";
         }
 
-        if (_groggyBadge != null)
+        if (_hpBar != null)
         {
-            _groggyBadge.SetActive(groggyActive);
+            _hpBar.minValue = 0f;
+            _hpBar.maxValue = Mathf.Max(1f, player.MaxHp);
+            _hpBar.value = Mathf.Clamp(player.CurrentHp, 0, player.MaxHp);
+            _hpBar.interactable = false;
         }
 
-        if (_background != null)
+        if (_guardText != null)
         {
-            if (groggyActive)
+            _guardText.text = $"{player.GuardValue}";
+        }
+
+        if (_guardBar != null)
+        {
+            _guardBar.minValue = 0f;
+            _guardBar.maxValue = Mathf.Max(1f, guardBarMax);
+            _guardBar.value = Mathf.Clamp(player.GuardValue, 0f, _guardBar.maxValue);
+            _guardBar.interactable = false;
+        }
+
+        if (_prepBar != null)
+        {
+            _prepBar.minValue = 0f;
+            _prepBar.maxValue = 1f;
+            _prepBar.value = 0f;
+            _prepBar.interactable = false;
+        }
+
+        if (_groggyText != null)
+        {
+            _groggyText.text = string.Empty;
+        }
+
+        if (_warningText != null)
+        {
+            _warningText.text = string.Empty;
+        }
+
+        ApplyTurnVisual(isCurrentTurn);
+    }
+
+    public void ApplyEnemyState(CombatActorRuntime enemy, int breakThreshold, int prepCap, bool isCurrentTurn)
+    {
+        CacheVisualDefaults();
+        if (enemy == null)
+        {
+            return;
+        }
+
+        int safeBreakThreshold = Mathf.Max(1, breakThreshold);
+        int safePrepCap = Mathf.Max(1, prepCap);
+        int enemyGuardRemaining = Mathf.Clamp(safeBreakThreshold - enemy.BreakProgress, 0, safeBreakThreshold);
+
+        if (_hpText != null)
+        {
+            _hpText.text = $"{enemy.CurrentHp}/{Mathf.Max(1, enemy.MaxHp)}";
+        }
+
+        if (_hpBar != null)
+        {
+            _hpBar.minValue = 0f;
+            _hpBar.maxValue = Mathf.Max(1f, enemy.MaxHp);
+            _hpBar.value = Mathf.Clamp(enemy.CurrentHp, 0, enemy.MaxHp);
+            _hpBar.interactable = false;
+        }
+
+        if (_guardText != null)
+        {
+            _guardText.text = $"{enemyGuardRemaining}/{safeBreakThreshold}";
+        }
+
+        if (_guardBar != null)
+        {
+            _guardBar.minValue = 0f;
+            _guardBar.maxValue = safeBreakThreshold;
+            _guardBar.value = enemyGuardRemaining;
+            _guardBar.interactable = false;
+        }
+
+        if (_prepBar != null)
+        {
+            _prepBar.minValue = 0f;
+            _prepBar.maxValue = safePrepCap;
+            _prepBar.value = Mathf.Clamp(enemy.EnemyPrepStack, 0, safePrepCap);
+            _prepBar.interactable = false;
+        }
+
+        if (_groggyText != null)
+        {
+            if (enemy.GroggyActive)
             {
-                _background.color = new Color(_background.color.r * 0.65f, _background.color.g * 0.65f, _background.color.b * 0.65f, _background.color.a);
+                _groggyText.text = "!!GROGGY!!";
+            }
+            else if (enemy.GroggyPending)
+            {
+                _groggyText.text = "GROGGY NEXT";
             }
             else
             {
-                _background.color = new Color(_baseColor.r * 0.22f + 0.07f, _baseColor.g * 0.22f + 0.07f, _baseColor.b * 0.22f + 0.07f, 0.94f);
+                _groggyText.text = string.Empty;
             }
         }
-    }
 
-    public void SetTurnHighlight(bool active)
-    {
-        if (_border != null)
+        if (_warningText != null)
         {
-            _border.color = active
-                ? new Color(_baseColor.r, _baseColor.g, _baseColor.b, 0.95f)
-                : new Color(_baseColor.r, _baseColor.g, _baseColor.b, 0.22f);
+            _warningText.text = enemy.EnemyPrepStack >= safePrepCap ? "!!DESPERATION READY!!" : string.Empty;
         }
 
-        if (_motionRoot != null)
-        {
-            _motionRoot.localScale = active ? Vector3.one * 1.01f : Vector3.one;
-        }
+        ApplyTurnVisual(isCurrentTurn);
     }
 
     public void PlayAttackLunge(float direction)
@@ -173,9 +167,9 @@ public class CombatActorPanelView : MonoBehaviour
         }
 
         _motionRoot.DOKill();
-        _motionRoot.DOAnchorPos(_basePos + new Vector2(34f * direction, 0f), 0.08f)
+        _motionRoot.DOAnchorPos(_baseMotionPos + new Vector2(34f * direction, 0f), 0.08f)
             .SetEase(Ease.OutQuad)
-            .OnComplete(() => _motionRoot.DOAnchorPos(_basePos, 0.15f).SetEase(Ease.OutBack));
+            .OnComplete(() => _motionRoot.DOAnchorPos(_baseMotionPos, 0.15f).SetEase(Ease.OutBack));
     }
 
     public void PlayHitReaction()
@@ -191,47 +185,54 @@ public class CombatActorPanelView : MonoBehaviour
         {
             _motionRoot.DOKill();
             _motionRoot.DOShakeAnchorPos(0.18f, new Vector2(18f, 0f), 20, 90f, false, true)
-                .OnComplete(() => _motionRoot.anchoredPosition = _basePos);
+                .OnComplete(() => _motionRoot.anchoredPosition = _baseMotionPos);
         }
     }
 
-    private static string BoolText(bool b)
+    private void ApplyTurnVisual(bool isCurrentTurn)
     {
-        return b ? "ON" : "OFF";
+        if (_border != null)
+        {
+            _border.color = isCurrentTurn ? _turnHighlightColor : _normalBorderColor;
+        }
+
+        Color targetTextColor = isCurrentTurn ? _turnHighlightColor : _normalTextColor;
+        if (_turnTintTexts != null)
+        {
+            for (int i = 0; i < _turnTintTexts.Length; i++)
+            {
+                if (_turnTintTexts[i] != null)
+                {
+                    _turnTintTexts[i].color = targetTextColor;
+                }
+            }
+        }
     }
 
-    private static GameObject CreateRect(string n, RectTransform p, Vector2 min, Vector2 max)
+    private void CacheVisualDefaults()
     {
-        GameObject go = new GameObject(n, typeof(RectTransform));
-        RectTransform rt = go.GetComponent<RectTransform>();
-        rt.SetParent(p, false);
-        rt.anchorMin = min;
-        rt.anchorMax = max;
-        rt.offsetMin = Vector2.zero;
-        rt.offsetMax = Vector2.zero;
-        return go;
-    }
+        if (_visualCached)
+        {
+            return;
+        }
 
-    private static TMP_Text CreateText(string n, RectTransform p, Vector2 min, Vector2 max, TMP_FontAsset f, float size, FontStyles style, TextAlignmentOptions align, string t)
-    {
-        GameObject go = new GameObject(n, typeof(RectTransform), typeof(TextMeshProUGUI));
-        RectTransform rt = go.GetComponent<RectTransform>();
-        rt.SetParent(p, false);
-        rt.anchorMin = min;
-        rt.anchorMax = max;
-        rt.offsetMin = Vector2.zero;
-        rt.offsetMax = Vector2.zero;
+        _baseMotionPos = _motionRoot != null ? _motionRoot.anchoredPosition : Vector2.zero;
+        if (_border != null)
+        {
+            _normalBorderColor = _border.color;
+        }
 
-        TMP_Text text = go.GetComponent<TMP_Text>();
-        text.font = f != null ? f : TMP_Settings.defaultFontAsset;
-        text.fontSize = size;
-        text.fontStyle = style;
-        text.alignment = align;
-        text.textWrappingMode = TextWrappingModes.Normal;
-        text.overflowMode = TextOverflowModes.Overflow;
-        text.text = t;
-        text.color = Color.white;
-        text.raycastTarget = false;
-        return text;
+        TMP_Text sample = _hpText;
+        if (sample == null && _turnTintTexts != null && _turnTintTexts.Length > 0)
+        {
+            sample = _turnTintTexts[0];
+        }
+
+        if (sample != null)
+        {
+            _normalTextColor = sample.color;
+        }
+
+        _visualCached = true;
     }
 }

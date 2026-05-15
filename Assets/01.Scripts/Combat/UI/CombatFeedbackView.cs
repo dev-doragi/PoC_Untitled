@@ -14,31 +14,6 @@ public class CombatFeedbackView : MonoBehaviour
     private TMP_FontAsset _font;
     private Canvas _canvas;
 
-    public void BuildRuntimeChildren(TMP_FontAsset font)
-    {
-        _font = font != null ? font : TMP_Settings.defaultFontAsset;
-
-        GameObject flash = new GameObject("ScreenFlash", typeof(RectTransform), typeof(Image));
-        RectTransform fr = flash.GetComponent<RectTransform>();
-        fr.SetParent(transform as RectTransform, false);
-        fr.anchorMin = Vector2.zero;
-        fr.anchorMax = Vector2.one;
-        fr.offsetMin = Vector2.zero;
-        fr.offsetMax = Vector2.zero;
-        _screenFlashImage = flash.GetComponent<Image>();
-        _screenFlashImage.color = new Color(1f, 1f, 1f, 0f);
-        _screenFlashImage.raycastTarget = false;
-
-        GameObject popup = new GameObject("PopupLayer", typeof(RectTransform));
-        RectTransform pr = popup.GetComponent<RectTransform>();
-        pr.SetParent(transform as RectTransform, false);
-        pr.anchorMin = Vector2.zero;
-        pr.anchorMax = Vector2.one;
-        pr.offsetMin = Vector2.zero;
-        pr.offsetMax = Vector2.zero;
-        _popupLayer = pr;
-    }
-
     public void Initialize(TMP_FontAsset font)
     {
         _font = font != null ? font : TMP_Settings.defaultFontAsset;
