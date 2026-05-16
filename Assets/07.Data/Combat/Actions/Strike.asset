@@ -16,5 +16,5 @@ MonoBehaviour:
   baseDamage: 6
   sandCost: 3
   breakPower: 1
-  prepGain: 0
+  threatDelta: 0
   guardValue: 0

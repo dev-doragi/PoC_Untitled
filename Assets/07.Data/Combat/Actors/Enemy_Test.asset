@@ -15,4 +15,4 @@ MonoBehaviour:
   actorType: 2
   maxHp: 36
   initialSand: 0
-  baseGuard: 0
+  baseGuard: 12

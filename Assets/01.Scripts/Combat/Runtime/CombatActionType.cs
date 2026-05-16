@@ -6,7 +6,10 @@ public enum CombatActionType
     Hex = 3,
     Guard = 4,
     EndTurn = 5,
-    Prepare = 10,
+    RecoverGuard = 10,
     WeakAttack = 11,
-    DesperationStrike = 12
+    HeavyAttack = 12,
+    HeavyAttackPlus = 13,
+    DesperationStrike = 14,
+    DoubleAction = 15
 }

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Data container for combat actions.
@@ -10,6 +11,6 @@ public class CombatActionDataSO : ScriptableObject
     public int baseDamage;
     public int sandCost;
     public int breakPower;
-    public int prepGain;
+    [FormerlySerializedAs("prepGain")] public int threatDelta;
     public int guardValue;
 }

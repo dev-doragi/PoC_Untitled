@@ -12,10 +12,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e716b7437a68b4b47bb579e9315ec7d7, type: 3}
   m_Name: HourglassCombatConfig_Test
   m_EditorClassIdentifier: Assembly-CSharp::HourglassCombatConfigSO
-  maxActionSand: 9
-  flipTransfer: 1
+  totalSand: 10
+  minimumFall: 3
+  lockedSand: 2
   defaultPlayerSand: 6
-  defaultEnemySand: 0
+  defaultEnemySand: 4
   breakThreshold: 8
-  prepCap: 3
-  groggyIncomingSandMultiplier: 0.5
+  threatCap: 3
+  enemyThreatGainPerTurn: 1
+  hexThreatDelta: -1
+  breakThreatDelta: -2
+  resetThreatOnBreak: 1
+  enemyRecoverGuardAmount: 2
+  enemyHighSandRecoverGuardBonus: 1
+  enemyWeakDamage: 4
+  enemyHeavyDamage: 8
+  enemyHeavyPlusDamage: 11
+  enemyDesperationDamage: 6
+  allowThreatMaxDoubleAction: 1
+  enemyDoubleActionFirstDamage: 4
+  enemyDoubleActionSecondDamage: 8

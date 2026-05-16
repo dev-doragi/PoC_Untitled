@@ -20,6 +20,9 @@ public class HourglassSandView : MonoBehaviour
     [SerializeField] private float _flipDuration = 0.45f;
     [SerializeField] private float _flipAnglePerTurn = -180f;
     [SerializeField] private float _textFadeDuration = 0.08f;
+    [Header("Sand Tween")]
+    [SerializeField] private float _sandTweenDuration = 0.16f;
+    [SerializeField] private Ease _sandTweenEase = Ease.Linear;
 
     private bool _isFlipped;
     private Coroutine _flipRoutine;
@@ -27,12 +30,14 @@ public class HourglassSandView : MonoBehaviour
     private Slider.Direction _downerBaseDirection;
     private bool _isFlipTransitionRunning;
     private bool _hasPendingFlipPreview;
+    private bool _forceFlipPending;
     private CombatTurnState _previewTurnState;
     private CombatRuntimeState _queuedStateDuringFlip;
     private bool _freezeSandUntilStateProgress;
     private CombatTurnState _freezeTurnState;
     private int _freezeAvailable;
     private int _freezeTransferred;
+    public bool IsTransitioning => _isFlipTransitionRunning;
 
     private void Awake()
     {
@@ -43,6 +48,13 @@ public class HourglassSandView : MonoBehaviour
         {
             _hourglassTextCanvasGroup.alpha = 1f;
         }
+    }
+
+    private void OnDestroy()
+    {
+        _upperSlider?.DOKill();
+        _downerSlider?.DOKill();
+        _rotatingVisualRoot?.DOKill();
     }
 
     public void Refresh(CombatRuntimeState state)
@@ -58,7 +70,9 @@ public class HourglassSandView : MonoBehaviour
             return;
         }
 
-        if (_hasPendingFlipPreview && IsCombatTurn(_previewTurnState) && IsCombatTurn(state.TurnState) && _previewTurnState != state.TurnState)
+        bool shouldFlipByTurnSwap = IsCombatTurn(_previewTurnState) && IsCombatTurn(state.TurnState) && _previewTurnState != state.TurnState;
+        bool shouldFlipByForce = _forceFlipPending && IsCombatTurn(state.TurnState);
+        if (_hasPendingFlipPreview && (shouldFlipByTurnSwap || shouldFlipByForce))
         {
             if (_flipRoutine != null)
             {
@@ -96,14 +110,15 @@ public class HourglassSandView : MonoBehaviour
         _flipDuration = Mathf.Clamp(duration, 0.1f, 1.5f);
     }
 
-    public void PrepareFlipTransferPreview(in CombatLogSnapshot snapshot, int maxActionSand, int flipTransfer)
+    public void QueueFlipPreview(in CombatLogSnapshot snapshot, CombatRuntimeState state)
     {
-        if (!IsCombatTurn(snapshot.turn_state))
+        if (!IsCombatTurn(snapshot.turn_state) || state == null)
         {
             return;
         }
 
         _hasPendingFlipPreview = true;
+        _forceFlipPending = true;
         _previewTurnState = snapshot.turn_state;
         _queuedStateDuringFlip = null;
 
@@ -114,11 +129,15 @@ public class HourglassSandView : MonoBehaviour
             ? snapshot.player_available_sand
             : snapshot.enemy_available_sand;
         bool nextIsEnemy = snapshot.turn_state == CombatTurnState.PlayerTurn;
+        if (nextIsEnemy && snapshot.enemy_groggy_pending)
+        {
+            nextIsEnemy = false;
+        }
 
-        int safeMax = Mathf.Max(1, maxActionSand);
-        int previewValue = Mathf.Max(0, transferred + Mathf.Max(0, flipTransfer));
+        int safeMax = Mathf.Max(1, state.TotalSand - state.LockedSand);
+        int previewValue = ComputeNextUpperAfterMinimumFall(available, transferred, state.MinimumFall);
 
-        ApplySandState(available, transferred, safeMax);
+        ApplySandState(available, transferred, safeMax, true);
 
         if (_upperText != null)
         {
@@ -176,7 +195,7 @@ public class HourglassSandView : MonoBehaviour
         int available = Mathf.Clamp(currentActor.AvailableSand, 0, maxActionSand);
         int transferred = Mathf.Clamp(currentActor.TransferredSand, 0, maxActionSand);
 
-        ApplySandState(available, transferred, maxActionSand);
+        ApplySandState(available, transferred, maxActionSand, false);
         ApplyTextState(state, transferred);
     }
 
@@ -210,6 +229,7 @@ public class HourglassSandView : MonoBehaviour
         CombatRuntimeState stateToApply = _queuedStateDuringFlip != null ? _queuedStateDuringFlip : nextState;
         _queuedStateDuringFlip = null;
         _hasPendingFlipPreview = false;
+        _forceFlipPending = false;
         if (stateToApply != null)
         {
             CombatActorRuntime actor = stateToApply.GetActor(stateToApply.TurnState);
@@ -266,14 +286,17 @@ public class HourglassSandView : MonoBehaviour
             return;
         }
 
-        int previewBase = Mathf.Max(0, currentTransferred + state.FlipTransfer);
+        CombatActorRuntime actor = state.GetActor(state.TurnState);
+        int currentAvailable = actor != null ? actor.AvailableSand : 0;
+        int previewBase = ComputeNextUpperAfterMinimumFall(currentAvailable, currentTransferred, state.MinimumFall);
         bool nextIsEnemy = state.TurnState == CombatTurnState.PlayerTurn;
-        bool groggyReduced = nextIsEnemy && state.Enemy != null && (state.Enemy.GroggyPending || state.Enemy.GroggyActive);
-        int previewReduced = groggyReduced
-            ? Mathf.Max(0, Mathf.CeilToInt(previewBase * state.GroggyIncomingSandMultiplier))
-            : previewBase;
+        bool bonusTurn = nextIsEnemy && state.Enemy != null && (state.Enemy.GroggyPending || state.Enemy.GroggyActive);
+        if (bonusTurn)
+        {
+            nextIsEnemy = false;
+        }
 
-        SetNextText(nextIsEnemy, previewBase, previewReduced, groggyReduced);
+        SetNextText(nextIsEnemy, previewBase, previewBase, false);
     }
 
     private void SetNextText(bool nextIsEnemy, int previewBase, int previewReduced, bool groggyReduced)
@@ -328,28 +351,60 @@ public class HourglassSandView : MonoBehaviour
         return turnState == CombatTurnState.PlayerTurn || turnState == CombatTurnState.EnemyTurn;
     }
 
-    private void ApplySandState(int available, int transferred, int maxActionSand)
+    private static int ComputeNextUpperAfterMinimumFall(int availableSand, int transferredSand, int minimumFall)
+    {
+        int upper = Mathf.Max(0, availableSand);
+        int lower = Mathf.Max(0, transferredSand);
+        int safeMinimum = Mathf.Max(0, minimumFall);
+        if (safeMinimum <= 0 || lower >= safeMinimum)
+        {
+            return lower;
+        }
+
+        int forcedFall = Mathf.Min(safeMinimum - lower, upper);
+        return lower + forcedFall;
+    }
+
+    private void ApplySandState(int available, int transferred, int maxActionSand, bool immediate)
     {
         Slider topVisibleSlider = GetTopVisibleSlider();
         Slider bottomVisibleSlider = GetBottomVisibleSlider();
 
         if (topVisibleSlider != null)
         {
-            topVisibleSlider.DOKill();
             topVisibleSlider.minValue = 0f;
             topVisibleSlider.maxValue = maxActionSand;
-            topVisibleSlider.value = available;
             topVisibleSlider.interactable = false;
+            TweenSliderValue(topVisibleSlider, available, immediate);
         }
 
         if (bottomVisibleSlider != null)
         {
-            bottomVisibleSlider.DOKill();
             bottomVisibleSlider.minValue = 0f;
             bottomVisibleSlider.maxValue = maxActionSand;
-            bottomVisibleSlider.value = transferred;
             bottomVisibleSlider.interactable = false;
+            TweenSliderValue(bottomVisibleSlider, transferred, immediate);
         }
+    }
+
+    private void TweenSliderValue(Slider slider, int targetValue, bool immediate)
+    {
+        if (slider == null)
+        {
+            return;
+        }
+
+        float clampedTarget = Mathf.Clamp(targetValue, slider.minValue, slider.maxValue);
+        slider.DOKill();
+
+        float duration = immediate ? 0f : Mathf.Max(0f, _sandTweenDuration);
+        if (duration <= 0f || Mathf.Approximately(slider.value, clampedTarget))
+        {
+            slider.value = clampedTarget;
+            return;
+        }
+
+        slider.DOValue(clampedTarget, duration).SetEase(_sandTweenEase);
     }
 
     private Slider GetTopVisibleSlider()

@@ -71,7 +71,7 @@ public class CombatActionPanelView : MonoBehaviour
     {
         SetTexts(_strikeNameText, _strikeCostText, _strikeEffectText, "STRIKE", "Cost 3", "DMG 6");
         SetTexts(_pierceNameText, _pierceCostText, _pierceEffectText, "PIERCE", "Cost 3", "E.GUARD -4");
-        SetTexts(_hexNameText, _hexCostText, _hexEffectText, "HEX", "Cost 3", "PREP -1");
+        SetTexts(_hexNameText, _hexCostText, _hexEffectText, "HEX", "Cost 3", "THREAT -1");
         SetTexts(_guardNameText, _guardCostText, _guardEffectText, "GUARD", "Cost 2", "BLOCK +4");
         SetTexts(_endTurnNameText, _endTurnCostText, _endTurnEffectText, "FLIP", "End Turn", "Enemy +0");
 

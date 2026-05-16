@@ -8,12 +8,26 @@ public class CombatRuntimeState
     public CombatActorRuntime Player;
     public CombatActorRuntime Enemy;
     public bool IsCombatEnded;
-    public int FlipTransfer;
-    public int MaxTransferSand;
-    public int MinimumTurnSand;
+    public int TotalSand;
+    public int UpperSand;
+    public int LowerSand;
+    public int LockedSand;
+    public int MinimumFall;
     public int MaxEnemyGuard;
-    public int PrepCap;
-    public float GroggyIncomingSandMultiplier;
+    public int ThreatCap;
+    public int EnemyThreatGainPerTurn;
+    public int HexThreatDelta;
+    public int BreakThreatDelta;
+    public bool ResetThreatOnBreak;
+    public int EnemyRecoverGuardAmount;
+    public int EnemyHighSandRecoverGuardBonus;
+    public int EnemyWeakDamage;
+    public int EnemyHeavyDamage;
+    public int EnemyHeavyPlusDamage;
+    public int EnemyDesperationDamage;
+    public int EnemyDoubleActionFirstDamage;
+    public int EnemyDoubleActionSecondDamage;
+    public bool AllowThreatMaxDoubleAction;
 
     public CombatActorRuntime GetActor(CombatTurnState turnState)
     {
@@ -43,5 +57,22 @@ public class CombatRuntimeState
         }
 
         return null;
+    }
+
+    public void SyncActorSand()
+    {
+        CombatActorRuntime current = GetActor(TurnState);
+        CombatActorRuntime opponent = GetOpponent(TurnState);
+        if (current != null)
+        {
+            current.AvailableSand = UpperSand;
+            current.TransferredSand = LowerSand;
+        }
+
+        if (opponent != null)
+        {
+            opponent.AvailableSand = 0;
+            opponent.TransferredSand = 0;
+        }
     }
 }

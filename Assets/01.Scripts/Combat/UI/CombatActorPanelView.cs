@@ -1,6 +1,7 @@
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 /// <summary>
@@ -16,7 +17,8 @@ public class CombatActorPanelView : MonoBehaviour
     [SerializeField] private Slider _hpBar;
     [SerializeField] private TMP_Text _guardText;
     [SerializeField] private Slider _guardBar;
-    [SerializeField] private Slider _prepBar;
+    [FormerlySerializedAs("_prepBar")]
+    [SerializeField] private Slider _threatBar;
     [SerializeField] private TMP_Text _groggyText;
     [SerializeField] private TMP_Text _warningText;
     [SerializeField] private TMP_Text[] _turnTintTexts;
@@ -68,12 +70,12 @@ public class CombatActorPanelView : MonoBehaviour
             _guardBar.interactable = false;
         }
 
-        if (_prepBar != null)
+        if (_threatBar != null)
         {
-            _prepBar.minValue = 0f;
-            _prepBar.maxValue = 1f;
-            _prepBar.value = 0f;
-            _prepBar.interactable = false;
+            _threatBar.minValue = 0f;
+            _threatBar.maxValue = 1f;
+            _threatBar.value = 0f;
+            _threatBar.interactable = false;
         }
 
         if (_groggyText != null)
@@ -89,7 +91,7 @@ public class CombatActorPanelView : MonoBehaviour
         ApplyTurnVisual(isCurrentTurn);
     }
 
-    public void ApplyEnemyState(CombatActorRuntime enemy, int maxEnemyGuard, int prepCap, bool isCurrentTurn)
+    public void ApplyEnemyState(CombatActorRuntime enemy, int maxEnemyGuard, int threatCap, bool isCurrentTurn)
     {
         CacheVisualDefaults();
         if (enemy == null)
@@ -98,7 +100,7 @@ public class CombatActorPanelView : MonoBehaviour
         }
 
         int safeMaxEnemyGuard = Mathf.Max(1, maxEnemyGuard);
-        int safePrepCap = Mathf.Max(1, prepCap);
+        int safeThreatCap = Mathf.Max(1, threatCap);
         int enemyGuardRemaining = Mathf.Clamp(enemy.EnemyGuard, 0, safeMaxEnemyGuard);
 
         if (_hpText != null)
@@ -127,12 +129,12 @@ public class CombatActorPanelView : MonoBehaviour
             _guardBar.interactable = false;
         }
 
-        if (_prepBar != null)
+        if (_threatBar != null)
         {
-            _prepBar.minValue = 0f;
-            _prepBar.maxValue = safePrepCap;
-            _prepBar.value = Mathf.Clamp(enemy.EnemyPrepStack, 0, safePrepCap);
-            _prepBar.interactable = false;
+            _threatBar.minValue = 0f;
+            _threatBar.maxValue = safeThreatCap;
+            _threatBar.value = Mathf.Clamp(enemy.EnemyThreat, 0, safeThreatCap);
+            _threatBar.interactable = false;
         }
 
         if (_groggyText != null)
@@ -153,7 +155,7 @@ public class CombatActorPanelView : MonoBehaviour
 
         if (_warningText != null)
         {
-            _warningText.text = enemy.EnemyPrepStack >= safePrepCap ? "!!DESPERATION READY!!" : string.Empty;
+            _warningText.text = enemy.EnemyThreat >= safeThreatCap ? "!!THREAT MAX!!" : string.Empty;
         }
 
         ApplyTurnVisual(isCurrentTurn);

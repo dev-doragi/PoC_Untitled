@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 211cf7e7c07ce93418649b755ac68a84, type: 3}
-  m_Name: Prepare
+  m_Name: RecoverGuard
   m_EditorClassIdentifier: Assembly-CSharp::CombatActionDataSO
   actionType: 10
   baseDamage: 0
   sandCost: 1
   breakPower: 0
-  prepGain: 1
+  threatDelta: 1
   guardValue: 0

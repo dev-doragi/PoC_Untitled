@@ -7,6 +7,14 @@ using UnityEngine.UI;
 [DefaultExecutionOrder(-40)]
 public class CombatScreenPresenter : MonoBehaviour
 {
+    private const string TurnIndexColor = "#7F8FA6";
+    private const string PlayerTurnColor = "#5EC8FF";
+    private const string EnemyTurnColor = "#FF9B7A";
+    private const string SpecialEventColor = "#FFD966";
+    private const string BonusTurnColor = "#7CFF9B";
+    private const string DamageColor = "#FFB4A2";
+    private const string ActionColor = "#EAF2FF";
+
     [Header("View References")]
     [SerializeField] private CombatActorPanelView playerStatusView;
     [SerializeField] private CombatActorPanelView enemyStatusView;
@@ -38,6 +46,8 @@ public class CombatScreenPresenter : MonoBehaviour
         EventBus.Instance.Subscribe<CombatBreakTriggeredEvent>(OnCombatBreakTriggered);
         EventBus.Instance.Subscribe<CombatGroggyAppliedEvent>(OnCombatGroggyApplied);
         EventBus.Instance.Subscribe<CombatEndedEvent>(OnCombatEnded);
+        EventBus.Instance.Subscribe<CombatMinimumFallAppliedEvent>(OnCombatMinimumFallApplied);
+        EventBus.Instance.Subscribe<CombatBonusTurnGrantedEvent>(OnCombatBonusTurnGranted);
         EventBus.Instance.Subscribe<CombatStrikeInputEvent>(OnCombatStrikeInput);
         EventBus.Instance.Subscribe<CombatPierceInputEvent>(OnCombatPierceInput);
         EventBus.Instance.Subscribe<CombatHexInputEvent>(OnCombatHexInput);
@@ -69,6 +79,8 @@ public class CombatScreenPresenter : MonoBehaviour
         EventBus.Instance.Unsubscribe<CombatBreakTriggeredEvent>(OnCombatBreakTriggered);
         EventBus.Instance.Unsubscribe<CombatGroggyAppliedEvent>(OnCombatGroggyApplied);
         EventBus.Instance.Unsubscribe<CombatEndedEvent>(OnCombatEnded);
+        EventBus.Instance.Unsubscribe<CombatMinimumFallAppliedEvent>(OnCombatMinimumFallApplied);
+        EventBus.Instance.Unsubscribe<CombatBonusTurnGrantedEvent>(OnCombatBonusTurnGranted);
         EventBus.Instance.Unsubscribe<CombatStrikeInputEvent>(OnCombatStrikeInput);
         EventBus.Instance.Unsubscribe<CombatPierceInputEvent>(OnCombatPierceInput);
         EventBus.Instance.Unsubscribe<CombatHexInputEvent>(OnCombatHexInput);
@@ -78,19 +90,27 @@ public class CombatScreenPresenter : MonoBehaviour
 
     private void OnCombatStarted(CombatStartedEvent evt)
     {
-        combatLogView?.AddLog("Combat Started");
+        combatLogView?.AddLog($"{FormatTurnPrefix(evt.Snapshot.turn_index)}{FormatSpecial("COMBAT START")}");
         RefreshViews();
     }
 
     private void OnCombatTurnStarted(CombatTurnStartedEvent evt)
     {
-        combatLogView?.AddLog(evt.Snapshot.turn_state == CombatTurnState.PlayerTurn ? "Player Turn Start" : "Enemy Turn Start");
+        combatLogView?.AddLog($"{FormatTurnPrefix(evt.Snapshot.turn_index)}{FormatTurnHeadline(evt.Snapshot.turn_state, "START")}");
         RefreshViews();
     }
 
     private void OnCombatActionExecuted(CombatActionExecutedEvent evt)
     {
-        combatLogView?.AddLog($"{evt.Snapshot.actor} used {evt.Snapshot.action_type}");
+        if (evt.Snapshot.action_type == CombatActionType.EndTurn)
+        {
+            combatLogView?.AddLog($"{FormatTurnPrefix(evt.Snapshot.turn_index)}{FormatSpecial("FLIP")}");
+        }
+        else
+        {
+            string actor = evt.Snapshot.actor == CombatActorType.Player ? "Player" : "Enemy";
+            combatLogView?.AddLog($"{FormatTurnPrefix(evt.Snapshot.turn_index)}<color={ActionColor}>{actor} used {evt.Snapshot.action_type}</color>");
+        }
 
         if (evt.Snapshot.action_type == CombatActionType.EndTurn)
         {
@@ -99,8 +119,10 @@ public class CombatScreenPresenter : MonoBehaviour
             if (state != null)
             {
                 CombatActorRuntime actor = state.GetActor(evt.Snapshot.turn_state);
-                int maxActionSand = actor != null ? actor.MaxActionSand : 3;
-                hourglassView?.PrepareFlipTransferPreview(evt.Snapshot, maxActionSand, state.FlipTransfer);
+                if (actor != null)
+                {
+                    hourglassView?.QueueFlipPreview(evt.Snapshot, state);
+                }
             }
         }
 
@@ -118,7 +140,7 @@ public class CombatScreenPresenter : MonoBehaviour
 
     private void OnCombatTurnEnded(CombatTurnEndedEvent evt)
     {
-        combatLogView?.AddLog($"Turn {evt.Snapshot.turn_index} End");
+        combatLogView?.AddLog($"{FormatTurnPrefix(evt.Snapshot.turn_index)}<b><color={ActionColor}>TURN END</color></b>");
         RefreshViews();
     }
 
@@ -128,7 +150,8 @@ public class CombatScreenPresenter : MonoBehaviour
         target?.PlayHitReaction();
         combatFeedbackView?.SpawnDamagePopup(target?.PopupAnchor, evt.Snapshot.damage, evt.Snapshot.actor == CombatActorType.Player ? new Color(1f, 0.35f, 0.35f, 1f) : new Color(1f, 0.65f, 0.3f, 1f));
         combatFeedbackView?.PlayScreenPulse();
-        combatLogView?.AddLog($"Damage {evt.Snapshot.damage}");
+        string victim = evt.Snapshot.actor == CombatActorType.Player ? "Player" : "Enemy";
+        combatLogView?.AddLog($"{FormatTurnPrefix(evt.Snapshot.turn_index)}<color={DamageColor}>Damage {evt.Snapshot.damage} -> {victim}</color>");
         RefreshViews();
     }
 
@@ -137,7 +160,7 @@ public class CombatScreenPresenter : MonoBehaviour
         CombatActorPanelView target = evt.Snapshot.actor == CombatActorType.Player ? playerStatusView : enemyStatusView;
         combatFeedbackView?.ShowBreakText(target?.PopupAnchor);
         combatFeedbackView?.PlayScreenPulse();
-        combatLogView?.AddLog("BREAK");
+        combatLogView?.AddLog($"{FormatTurnPrefix(evt.Snapshot.turn_index)}{FormatSpecial(">>> BREAK!")}");
         RefreshViews();
     }
 
@@ -146,16 +169,36 @@ public class CombatScreenPresenter : MonoBehaviour
         CombatActorPanelView target = evt.Snapshot.actor == CombatActorType.Player ? playerStatusView : enemyStatusView;
         combatFeedbackView?.ShowGroggyText(target?.PopupAnchor);
         combatFeedbackView?.PlayScreenPulse();
-        combatLogView?.AddLog("GROGGY");
+        combatLogView?.AddLog($"{FormatTurnPrefix(evt.Snapshot.turn_index)}{FormatSpecial(">>> GROGGY")}");
         RefreshViews();
     }
 
     private void OnCombatEnded(CombatEndedEvent evt)
     {
-        combatLogView?.AddLog(evt.PlayerWon ? "Victory" : "Defeat");
+        combatLogView?.AddLog($"{FormatTurnPrefix(evt.Snapshot.turn_index)}{FormatSpecial(evt.PlayerWon ? "VICTORY" : "DEFEAT")}");
         RefreshViews();
         hourglassView?.SetResultText(evt.PlayerWon);
         SetAllButtonsInteractable(false);
+    }
+
+    private void OnCombatMinimumFallApplied(CombatMinimumFallAppliedEvent evt)
+    {
+        if (evt.ForcedAmount <= 0)
+        {
+            return;
+        }
+
+        CacheCombatManager();
+        string actor = evt.Actor == CombatActorType.Player ? "Player" : "Enemy";
+        int turnIndex = _combatManager != null && _combatManager.RuntimeState != null ? _combatManager.RuntimeState.TurnIndex : 0;
+        combatLogView?.AddLog($"{FormatTurnPrefix(turnIndex)}{FormatSpecial($">>> MinimumFall +{evt.ForcedAmount} ({actor})")}");
+    }
+
+    private void OnCombatBonusTurnGranted(CombatBonusTurnGrantedEvent evt)
+    {
+        int turnIndex = evt.Snapshot.turn_index;
+        string actor = evt.Actor == CombatActorType.Player ? "Player" : "Enemy";
+        combatLogView?.AddLog($"{FormatTurnPrefix(turnIndex)}<b><color={BonusTurnColor}>>> BONUS TURN! {actor} acts again</color></b>");
     }
 
     private void CacheCombatManager()
@@ -210,7 +253,7 @@ public class CombatScreenPresenter : MonoBehaviour
         bool isEnemyTurn = state.TurnState == CombatTurnState.EnemyTurn;
 
         playerStatusView?.ApplyPlayerState(state.Player, isPlayerTurn, Mathf.Max(1f, playerGuardBarMax));
-        enemyStatusView?.ApplyEnemyState(state.Enemy, state.MaxEnemyGuard, state.PrepCap, isEnemyTurn);
+        enemyStatusView?.ApplyEnemyState(state.Enemy, state.MaxEnemyGuard, state.ThreatCap, isEnemyTurn);
         UpdateActorSpriteVisibility(state);
         hourglassView?.Refresh(state);
         UpdateEndTurnPreview(state);
@@ -250,7 +293,7 @@ public class CombatScreenPresenter : MonoBehaviour
             return false;
         }
 
-        return actor.TransferredSand + cost <= actor.MaxActionSand;
+        return true;
     }
 
     private void SetAllButtonsInteractable(bool interactable)
@@ -272,11 +315,11 @@ public class CombatScreenPresenter : MonoBehaviour
             return;
         }
 
-        int preview = Mathf.Max(0, currentActor.TransferredSand + state.FlipTransfer);
+        int preview = ComputeNextUpperAfterMinimumFall(currentActor.AvailableSand, currentActor.TransferredSand, state.MinimumFall);
         bool nextIsEnemy = state.TurnState == CombatTurnState.PlayerTurn;
         if (nextIsEnemy && state.Enemy != null && (state.Enemy.GroggyPending || state.Enemy.GroggyActive))
         {
-            preview = Mathf.Max(0, Mathf.CeilToInt(preview * state.GroggyIncomingSandMultiplier));
+            nextIsEnemy = false;
         }
 
         actionPanelView.SetEndTurnPreview(nextIsEnemy, preview);
@@ -306,8 +349,13 @@ public class CombatScreenPresenter : MonoBehaviour
     private void OnCombatGuardInput(CombatGuardInputEvent evt) => TryRequestFromInput(actionPanelView != null ? actionPanelView.GuardButton : null, RequestGuard);
     private void OnCombatEndTurnInput(CombatEndTurnInputEvent evt) => TryRequestFromInput(actionPanelView != null ? actionPanelView.EndTurnButton : null, RequestEndTurn);
 
-    private static void TryRequestFromInput(Button button, System.Action request)
+    private void TryRequestFromInput(Button button, System.Action request)
     {
+        if (hourglassView != null && hourglassView.IsTransitioning)
+        {
+            return;
+        }
+
         if (button == null || request == null || !button.interactable)
         {
             return;
@@ -318,32 +366,76 @@ public class CombatScreenPresenter : MonoBehaviour
 
     private void RequestStrike()
     {
+        if (hourglassView != null && hourglassView.IsTransitioning) return;
         CacheCombatManager();
         _combatManager?.RequestStrike();
     }
 
     private void RequestPierce()
     {
+        if (hourglassView != null && hourglassView.IsTransitioning) return;
         CacheCombatManager();
         _combatManager?.RequestPierce();
     }
 
     private void RequestHex()
     {
+        if (hourglassView != null && hourglassView.IsTransitioning) return;
         CacheCombatManager();
         _combatManager?.RequestHex();
     }
 
     private void RequestGuard()
     {
+        if (hourglassView != null && hourglassView.IsTransitioning) return;
         CacheCombatManager();
         _combatManager?.RequestGuard();
     }
 
     private void RequestEndTurn()
     {
+        if (hourglassView != null && hourglassView.IsTransitioning) return;
         CacheCombatManager();
         _combatManager?.RequestEndTurn();
+    }
+
+    private static string FormatTurnPrefix(int turnIndex)
+    {
+        return $"<color={TurnIndexColor}>[T{Mathf.Max(0, turnIndex):00}]</color> ";
+    }
+
+    private static string FormatTurnHeadline(CombatTurnState turnState, string phase)
+    {
+        if (turnState == CombatTurnState.PlayerTurn)
+        {
+            return $"<b><color={PlayerTurnColor}>PLAYER TURN {phase}</color></b>";
+        }
+
+        if (turnState == CombatTurnState.EnemyTurn)
+        {
+            return $"<b><color={EnemyTurnColor}>ENEMY TURN {phase}</color></b>";
+        }
+
+        return $"<b><color={ActionColor}>{turnState} {phase}</color></b>";
+    }
+
+    private static string FormatSpecial(string message)
+    {
+        return $"<b><color={SpecialEventColor}>{message}</color></b>";
+    }
+
+    private static int ComputeNextUpperAfterMinimumFall(int availableSand, int transferredSand, int minimumFall)
+    {
+        int upper = Mathf.Max(0, availableSand);
+        int lower = Mathf.Max(0, transferredSand);
+        int safeMinimum = Mathf.Max(0, minimumFall);
+        if (safeMinimum <= 0 || lower >= safeMinimum)
+        {
+            return lower;
+        }
+
+        int forcedFall = Mathf.Min(safeMinimum - lower, upper);
+        return lower + forcedFall;
     }
 
 }

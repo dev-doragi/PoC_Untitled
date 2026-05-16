@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -10,7 +10,16 @@ using UnityEngine;
 [DefaultExecutionOrder(-70)]
 public class HourglassCombatManager : Singleton<HourglassCombatManager>
 {
-    private const int DesperationMinSand = 1;
+    private enum EnemyIntentType
+    {
+        None = 0,
+        RecoverGuard = 1,
+        WeakAttack = 2,
+        HeavyAttack = 3,
+        HeavyAttackPlus = 4,
+        DesperationStrike = 5,
+        DoubleAction = 6
+    }
 
     [SerializeField] private HourglassCombatConfigSO _config;
     [SerializeField] private CombatActorDataSO _playerData;
@@ -42,7 +51,11 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
             return;
         }
 
+        RuntimeState.TurnIndex = 0;
         RuntimeState.TurnState = CombatTurnState.PlayerTurn;
+        RuntimeState.IsCombatEnded = false;
+        RuntimeState.SyncActorSand();
+
         EventBus.Instance.Publish(new CombatStartedEvent(CreateSnapshot()));
         EventBus.Instance.Publish(new CombatTurnStartedEvent(CreateSnapshot()));
         Debug.Log("[Combat] Combat Started");
@@ -50,30 +63,11 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
         PublishStateDebugLog();
     }
 
-    public void RequestStrike()
-    {
-        RequestPlayerAction(CombatActionType.Strike);
-    }
-
-    public void RequestPierce()
-    {
-        RequestPlayerAction(CombatActionType.Pierce);
-    }
-
-    public void RequestHex()
-    {
-        RequestPlayerAction(CombatActionType.Hex);
-    }
-
-    public void RequestGuard()
-    {
-        RequestPlayerAction(CombatActionType.Guard);
-    }
-
-    public void RequestEndTurn()
-    {
-        RequestPlayerAction(CombatActionType.EndTurn);
-    }
+    public void RequestStrike() => RequestPlayerAction(CombatActionType.Strike);
+    public void RequestPierce() => RequestPlayerAction(CombatActionType.Pierce);
+    public void RequestHex() => RequestPlayerAction(CombatActionType.Hex);
+    public void RequestGuard() => RequestPlayerAction(CombatActionType.Guard);
+    public void RequestEndTurn() => RequestPlayerAction(CombatActionType.EndTurn);
 
     private void RequestPlayerAction(CombatActionType actionType)
     {
@@ -106,19 +100,36 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
             return;
         }
 
+        int totalSand = Mathf.Max(1, _config.totalSand);
+        int lockedSand = Mathf.Clamp(_config.lockedSand, 0, Mathf.Max(0, totalSand - 1));
+        int unlockedSand = Mathf.Max(1, totalSand - lockedSand);
+        int enemyGuard = Mathf.Max(1, _enemyData.baseGuard > 0 ? _enemyData.baseGuard : _config.breakThreshold);
+
         RuntimeState = new CombatRuntimeState
         {
             TurnIndex = 0,
             TurnState = CombatTurnState.None,
             IsCombatEnded = false,
-            FlipTransfer = _config.flipTransfer,
-            MaxTransferSand = _config.maxTransferSand,
-            MinimumTurnSand = _config.minimumTurnSand,
-            MaxEnemyGuard = Mathf.Max(1, _config.breakThreshold),
-            PrepCap = _config.prepCap,
-            GroggyIncomingSandMultiplier = _config.groggyIncomingSandMultiplier,
-            Player = CombatActorRuntime.CreateFromData(_playerData, _config.defaultPlayerSand, _config.maxActionSand),
-            Enemy = CombatActorRuntime.CreateFromData(_enemyData, _config.defaultEnemySand, _config.maxActionSand, Mathf.Max(1, _config.breakThreshold))
+            TotalSand = totalSand,
+            LockedSand = lockedSand,
+            MinimumFall = Mathf.Max(0, _config.minimumFall),
+            MaxEnemyGuard = enemyGuard,
+            ThreatCap = Mathf.Max(1, _config.threatCap),
+            EnemyThreatGainPerTurn = Mathf.Max(0, _config.enemyThreatGainPerTurn),
+            HexThreatDelta = _config.hexThreatDelta,
+            BreakThreatDelta = _config.breakThreatDelta,
+            ResetThreatOnBreak = _config.resetThreatOnBreak,
+            EnemyRecoverGuardAmount = Mathf.Max(0, _config.enemyRecoverGuardAmount),
+            EnemyHighSandRecoverGuardBonus = Mathf.Max(0, _config.enemyHighSandRecoverGuardBonus),
+            EnemyWeakDamage = Mathf.Max(0, _config.enemyWeakDamage),
+            EnemyHeavyDamage = Mathf.Max(0, _config.enemyHeavyDamage),
+            EnemyHeavyPlusDamage = Mathf.Max(0, _config.enemyHeavyPlusDamage),
+            EnemyDesperationDamage = Mathf.Max(0, _config.enemyDesperationDamage),
+            EnemyDoubleActionFirstDamage = Mathf.Max(0, _config.enemyDoubleActionFirstDamage),
+            EnemyDoubleActionSecondDamage = Mathf.Max(0, _config.enemyDoubleActionSecondDamage),
+            AllowThreatMaxDoubleAction = _config.allowThreatMaxDoubleAction,
+            Player = CombatActorRuntime.CreateFromData(_playerData, 0, unlockedSand),
+            Enemy = CombatActorRuntime.CreateFromData(_enemyData, 0, unlockedSand, enemyGuard)
         };
 
         if (RuntimeState.Player == null || RuntimeState.Enemy == null)
@@ -128,11 +139,9 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
             return;
         }
 
-        int expectedMaxActionSand = RuntimeState.MaxTransferSand - RuntimeState.FlipTransfer;
-        if (RuntimeState.Player.MaxActionSand != expectedMaxActionSand || RuntimeState.Enemy.MaxActionSand != expectedMaxActionSand)
-        {
-            Debug.LogWarning($"[Combat] Config warning: MaxActionSand({RuntimeState.Player.MaxActionSand}) does not match MaxTransferSand({RuntimeState.MaxTransferSand}) - FlipTransfer({RuntimeState.FlipTransfer}) = {expectedMaxActionSand}.");
-        }
+        RuntimeState.UpperSand = Mathf.Clamp(_config.defaultPlayerSand, 0, unlockedSand);
+        RuntimeState.LowerSand = unlockedSand - RuntimeState.UpperSand;
+        RuntimeState.SyncActorSand();
     }
 
     private void TryExecutePlayerAction(CombatActionType actionType)
@@ -157,7 +166,7 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
             RuntimeState.Enemy,
             actionData,
             RuntimeState.MaxEnemyGuard,
-            RuntimeState.PrepCap);
+            RuntimeState.HexThreatDelta);
 
         if (!result.Succeeded)
         {
@@ -173,6 +182,7 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
 
         if (result.BreakTriggered)
         {
+            ApplyBreakThreatReduction(RuntimeState.Enemy);
             EventBus.Instance.Publish(new CombatBreakTriggeredEvent(CreateSnapshot(CombatActorType.Enemy, result.ActionType, result.SpentSand, result.DamageDealt)));
             Debug.Log("[Combat] Break Triggered: Enemy");
         }
@@ -183,6 +193,7 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
             Debug.Log("[Combat] Groggy Applied: Enemy(Pending)");
         }
 
+        UpdateHourglassFromCurrentActor();
         Debug.Log($"[Combat] Action Executed: Player {result.ActionType}");
         PublishStateDebugLog();
 
@@ -194,7 +205,8 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
 
     private void EndPlayerTurn()
     {
-        _turnProcessor.EndTurn(RuntimeState);
+        CombatTurnProcessor.TurnTransitionResult transitionResult = _turnProcessor.EndTurn(RuntimeState);
+        PublishTurnTransitionEvents(transitionResult);
         EventBus.Instance.Publish(new CombatTurnEndedEvent(CreateSnapshot()));
         Debug.Log("[Combat] Turn Ended: PlayerTurn");
         PublishStateDebugLog();
@@ -207,6 +219,12 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
 
         EventBus.Instance.Publish(new CombatTurnStartedEvent(CreateSnapshot()));
         Debug.Log($"[Combat] Turn Started: {RuntimeState.TurnState}");
+
+        if (RuntimeState.TurnState != CombatTurnState.EnemyTurn)
+        {
+            return;
+        }
+
         if (_enemyTurnRoutine != null)
         {
             StopCoroutine(_enemyTurnRoutine);
@@ -217,7 +235,7 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
 
     private IEnumerator RunEnemyTurnSequence()
     {
-        if (RuntimeState.IsCombatEnded || RuntimeState.TurnState != CombatTurnState.EnemyTurn)
+        if (RuntimeState == null || RuntimeState.IsCombatEnded || RuntimeState.TurnState != CombatTurnState.EnemyTurn)
         {
             yield break;
         }
@@ -229,110 +247,33 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
         }
 
         CombatActorRuntime enemy = RuntimeState.Enemy;
-        CombatActionDataSO weakAttackData = GetActionData(CombatActionType.WeakAttack);
-        CombatActionDataSO prepareData = GetActionData(CombatActionType.Prepare);
-        CombatActionDataSO desperationData = GetActionData(CombatActionType.DesperationStrike);
-        bool usedPrepareThisTurn = false;
+        bool threatMaxAtTurnStart = enemy != null && enemy.EnemyThreat >= RuntimeState.ThreatCap;
+        bool enemyActed = false;
 
-        while (!RuntimeState.IsCombatEnded && enemy.AvailableSand > 0)
+        if (!RuntimeState.IsCombatEnded && enemy != null && !enemy.IsDead)
         {
-            if (enemy.TransferredSand >= enemy.MaxActionSand)
+            EnemyIntentType intent = DetermineEnemyIntent(enemy);
+            if (intent != EnemyIntentType.None)
             {
-                break;
-            }
-
-            CombatActionType selectedAction = CombatActionType.EndTurn;
-            if (enemy.GroggyActive)
-            {
-                if (weakAttackData != null && enemy.CanSpend(weakAttackData.sandCost))
+                EventBus.Instance.Publish(new CombatActionRequestedEvent(MapIntentToActionType(intent)));
+                if (_enemyActionDelay > 0f)
                 {
-                    selectedAction = CombatActionType.WeakAttack;
+                    yield return new WaitForSeconds(_enemyActionDelay);
                 }
+
+                enemyActed = ExecuteEnemyIntent(enemy, intent, threatMaxAtTurnStart);
             }
-            else
-            {
-                bool canDesperation = desperationData != null
-                    && weakAttackData != null
-                    && enemy.EnemyPrepStack == RuntimeState.PrepCap
-                    && enemy.AvailableSand >= DesperationMinSand
-                    && enemy.AvailableSand < weakAttackData.sandCost;
-                if (canDesperation)
-                {
-                    selectedAction = CombatActionType.DesperationStrike;
-                }
-                else if (weakAttackData != null && enemy.CanSpend(weakAttackData.sandCost))
-                {
-                    selectedAction = CombatActionType.WeakAttack;
-                }
-                else if (!usedPrepareThisTurn && prepareData != null && enemy.CanSpend(prepareData.sandCost) && enemy.EnemyPrepStack < RuntimeState.PrepCap)
-                {
-                    selectedAction = CombatActionType.Prepare;
-                }
-            }
+        }
 
-            if (selectedAction == CombatActionType.EndTurn)
-            {
-                break;
-            }
+        ConsumeEnemyRemainingSand();
+        ApplyEnemyThreatOnTurnEnd(threatMaxAtTurnStart, enemyActed);
+        UpdateHourglassFromCurrentActor();
+        PublishStateDebugLog();
 
-            EventBus.Instance.Publish(new CombatActionRequestedEvent(selectedAction));
-            if (_enemyActionDelay > 0f)
-            {
-                yield return new WaitForSeconds(_enemyActionDelay);
-            }
-
-            CombatActionDataSO actionData = GetActionData(selectedAction);
-            if (actionData == null)
-            {
-                Debug.LogError($"[Combat] Action Failed: {selectedAction} | Reason: ActionData missing", this);
-                break;
-            }
-
-            CombatActionResult result = _actionResolver.Resolve(
-                RuntimeState.Enemy,
-                RuntimeState.Player,
-                actionData,
-                RuntimeState.MaxEnemyGuard,
-                RuntimeState.PrepCap);
-
-            if (!result.Succeeded)
-            {
-                Debug.LogWarning($"[Combat] Action Failed: {selectedAction} | Reason: {result.FailureReason}");
-                break;
-            }
-
-            if (selectedAction == CombatActionType.Prepare)
-            {
-                usedPrepareThisTurn = true;
-            }
-
-            EventBus.Instance.Publish(new CombatActionExecutedEvent(CreateSnapshot(CombatActorType.Enemy, result.ActionType, result.SpentSand, result.DamageDealt)));
-            if (result.DamageDealt > 0)
-            {
-                EventBus.Instance.Publish(new CombatActorDamagedEvent(CreateSnapshot(CombatActorType.Player, result.ActionType, result.SpentSand, result.DamageDealt)));
-            }
-
-            if (result.BreakTriggered)
-            {
-                EventBus.Instance.Publish(new CombatBreakTriggeredEvent(CreateSnapshot(CombatActorType.Player, result.ActionType, result.SpentSand, result.DamageDealt)));
-                Debug.Log("[Combat] Break Triggered: Player");
-            }
-
-            if (result.GroggyTriggered)
-            {
-                EventBus.Instance.Publish(new CombatGroggyAppliedEvent(CreateSnapshot(CombatActorType.Player, result.ActionType, result.SpentSand, result.DamageDealt)));
-                Debug.Log("[Combat] Groggy Applied: Player(Pending)");
-            }
-
-            Debug.Log($"[Combat] Action Executed: Enemy {result.ActionType}");
-            PublishStateDebugLog();
-
-            if (RuntimeState.Player.IsDead)
-            {
-                EndCombat(false);
-                yield break;
-            }
-
+        if (RuntimeState.Player.IsDead)
+        {
+            EndCombat(false);
+            yield break;
         }
 
         if (_enemyTurnEndDelay > 0f)
@@ -360,7 +301,8 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
 
     private void EndEnemyTurn()
     {
-        _turnProcessor.EndTurn(RuntimeState);
+        CombatTurnProcessor.TurnTransitionResult transitionResult = _turnProcessor.EndTurn(RuntimeState);
+        PublishTurnTransitionEvents(transitionResult);
         EventBus.Instance.Publish(new CombatTurnEndedEvent(CreateSnapshot()));
         Debug.Log("[Combat] Turn Ended: EnemyTurn");
         PublishStateDebugLog();
@@ -375,8 +317,220 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
         Debug.Log($"[Combat] Turn Started: {RuntimeState.TurnState}");
     }
 
+    private EnemyIntentType DetermineEnemyIntent(CombatActorRuntime enemy)
+    {
+        if (enemy == null || enemy.IsDead)
+        {
+            return EnemyIntentType.None;
+        }
+
+        int upperSand = Mathf.Max(0, enemy.AvailableSand);
+        bool threatMax = enemy.EnemyThreat >= RuntimeState.ThreatCap;
+
+        if (threatMax)
+        {
+            if (upperSand <= 2) return EnemyIntentType.DesperationStrike;
+            if (upperSand <= 4) return EnemyIntentType.HeavyAttack;
+            if (upperSand <= 6) return EnemyIntentType.HeavyAttackPlus;
+            if (RuntimeState.AllowThreatMaxDoubleAction) return EnemyIntentType.DoubleAction;
+            return EnemyIntentType.HeavyAttackPlus;
+        }
+
+        if (upperSand <= 2) return EnemyIntentType.RecoverGuard;
+        if (upperSand <= 4) return EnemyIntentType.WeakAttack;
+        if (upperSand <= 6) return EnemyIntentType.HeavyAttack;
+        return EnemyIntentType.HeavyAttackPlus;
+    }
+
+    private bool ExecuteEnemyIntent(CombatActorRuntime enemy, EnemyIntentType intent, bool threatMaxAtTurnStart)
+    {
+        if (enemy == null || RuntimeState == null || intent == EnemyIntentType.None)
+        {
+            return false;
+        }
+
+        CombatActionType actionType = MapIntentToActionType(intent);
+        int damage = 0;
+        int guardGain = 0;
+
+        if (intent == EnemyIntentType.RecoverGuard)
+        {
+            guardGain = RuntimeState.EnemyRecoverGuardAmount;
+        }
+        else if (intent == EnemyIntentType.WeakAttack)
+        {
+            damage = RuntimeState.EnemyWeakDamage;
+        }
+        else if (intent == EnemyIntentType.HeavyAttack)
+        {
+            damage = RuntimeState.EnemyHeavyDamage;
+        }
+        else if (intent == EnemyIntentType.HeavyAttackPlus)
+        {
+            damage = RuntimeState.EnemyHeavyPlusDamage;
+            if (!threatMaxAtTurnStart && enemy.AvailableSand >= 7)
+            {
+                guardGain = RuntimeState.EnemyHighSandRecoverGuardBonus;
+            }
+        }
+        else if (intent == EnemyIntentType.DesperationStrike)
+        {
+            damage = RuntimeState.EnemyDesperationDamage;
+        }
+        else if (intent == EnemyIntentType.DoubleAction)
+        {
+            int first = CombatActionResolver.ApplyEnemyIntentDamage(enemy, RuntimeState.Player, RuntimeState.EnemyDoubleActionFirstDamage);
+            int second = CombatActionResolver.ApplyEnemyIntentDamage(enemy, RuntimeState.Player, RuntimeState.EnemyDoubleActionSecondDamage);
+            damage = first + second;
+        }
+
+        if (guardGain > 0)
+        {
+            CombatActionResolver.ApplyEnemyRecoverGuard(enemy, guardGain);
+        }
+
+        if (damage > 0 && intent != EnemyIntentType.DoubleAction)
+        {
+            damage = CombatActionResolver.ApplyEnemyIntentDamage(enemy, RuntimeState.Player, damage);
+        }
+
+        // Enemy always executes one intent per turn. Move all remaining upper sand now
+        // so UI tween mirrors player-side spend timing instead of snapping at turn end.
+        int spentSand = Mathf.Max(0, enemy.AvailableSand);
+        if (spentSand > 0)
+        {
+            enemy.AvailableSand = 0;
+            enemy.TransferredSand += spentSand;
+        }
+
+        UpdateHourglassFromCurrentActor();
+        EventBus.Instance.Publish(new CombatActionExecutedEvent(CreateSnapshot(CombatActorType.Enemy, actionType, spentSand, damage)));
+        if (damage > 0)
+        {
+            EventBus.Instance.Publish(new CombatActorDamagedEvent(CreateSnapshot(CombatActorType.Player, actionType, 0, damage)));
+        }
+
+        return true;
+    }
+
+    private void ConsumeEnemyRemainingSand()
+    {
+        if (RuntimeState == null || RuntimeState.Enemy == null || RuntimeState.TurnState != CombatTurnState.EnemyTurn)
+        {
+            return;
+        }
+
+        int remaining = Mathf.Max(0, RuntimeState.Enemy.AvailableSand);
+        if (remaining <= 0)
+        {
+            return;
+        }
+
+        RuntimeState.Enemy.AvailableSand = 0;
+        RuntimeState.Enemy.TransferredSand += remaining;
+    }
+
+    private void ApplyEnemyThreatOnTurnEnd(bool threatMaxAtTurnStart, bool enemyActed)
+    {
+        if (RuntimeState == null || RuntimeState.Enemy == null || !enemyActed)
+        {
+            return;
+        }
+
+        if (threatMaxAtTurnStart)
+        {
+            RuntimeState.Enemy.EnemyThreat = 0;
+            return;
+        }
+
+        RuntimeState.Enemy.EnemyThreat = Mathf.Clamp(
+            RuntimeState.Enemy.EnemyThreat + RuntimeState.EnemyThreatGainPerTurn,
+            0,
+            RuntimeState.ThreatCap);
+    }
+
+    private static CombatActionType MapIntentToActionType(EnemyIntentType intent)
+    {
+        if (intent == EnemyIntentType.RecoverGuard) return CombatActionType.RecoverGuard;
+        if (intent == EnemyIntentType.WeakAttack) return CombatActionType.WeakAttack;
+        if (intent == EnemyIntentType.HeavyAttack) return CombatActionType.HeavyAttack;
+        if (intent == EnemyIntentType.HeavyAttackPlus) return CombatActionType.HeavyAttackPlus;
+        if (intent == EnemyIntentType.DesperationStrike) return CombatActionType.DesperationStrike;
+        if (intent == EnemyIntentType.DoubleAction) return CombatActionType.DoubleAction;
+        return CombatActionType.None;
+    }
+
+    private void PublishTurnTransitionEvents(CombatTurnProcessor.TurnTransitionResult result)
+    {
+        if (result.ForcedFallAmount > 0)
+        {
+            EventBus.Instance.Publish(new CombatMinimumFallAppliedEvent(result.ForcedFallActor, result.ForcedFallAmount, RuntimeState != null ? RuntimeState.MinimumFall : 0));
+        }
+
+        if (result.BonusTurnGranted)
+        {
+            EventBus.Instance.Publish(new CombatBonusTurnGrantedEvent(result.BonusActor, CreateSnapshot()));
+        }
+    }
+
+    private void ApplyBreakThreatReduction(CombatActorRuntime enemy)
+    {
+        if (RuntimeState == null || enemy == null)
+        {
+            return;
+        }
+
+        if (RuntimeState.ResetThreatOnBreak)
+        {
+            enemy.EnemyThreat = 0;
+            return;
+        }
+
+        enemy.EnemyThreat = Mathf.Clamp(enemy.EnemyThreat + RuntimeState.BreakThreatDelta, 0, RuntimeState.ThreatCap);
+    }
+
+    private void UpdateHourglassFromCurrentActor()
+    {
+        if (RuntimeState == null)
+        {
+            return;
+        }
+
+        CombatActorRuntime current = RuntimeState.GetActor(RuntimeState.TurnState);
+        CombatActorRuntime opponent = RuntimeState.GetOpponent(RuntimeState.TurnState);
+        if (current == null)
+        {
+            return;
+        }
+
+        int unlockedSand = Mathf.Max(1, RuntimeState.TotalSand - RuntimeState.LockedSand);
+        int upper = Mathf.Clamp(current.AvailableSand, 0, unlockedSand);
+        int lower = Mathf.Clamp(current.TransferredSand, 0, unlockedSand);
+
+        if (upper + lower != unlockedSand)
+        {
+            lower = Mathf.Clamp(unlockedSand - upper, 0, unlockedSand);
+        }
+
+        RuntimeState.UpperSand = upper;
+        RuntimeState.LowerSand = lower;
+        current.AvailableSand = upper;
+        current.TransferredSand = lower;
+
+        if (opponent != null)
+        {
+            opponent.AvailableSand = 0;
+            opponent.TransferredSand = 0;
+        }
+    }
+
     private void EndCombat(bool playerWon)
     {
+        if (RuntimeState == null)
+        {
+            return;
+        }
+
         if (RuntimeState.IsCombatEnded && RuntimeState.TurnState == CombatTurnState.Ended)
         {
             return;
@@ -397,32 +551,38 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
         }
 
         Debug.Log($"[Combat] HP Changed - Player:{RuntimeState.Player.CurrentHp}/{RuntimeState.Player.MaxHp}, Enemy:{RuntimeState.Enemy.CurrentHp}/{RuntimeState.Enemy.MaxHp}");
-        Debug.Log($"[Combat] flip transfer:{RuntimeState.FlipTransfer} | Sand Changed - Player A:{RuntimeState.Player.AvailableSand} T:{RuntimeState.Player.TransferredSand}, Enemy A:{RuntimeState.Enemy.AvailableSand} T:{RuntimeState.Enemy.TransferredSand}");
-        Debug.Log($"[Combat] State - TurnIndex:{RuntimeState.TurnIndex} TurnState:{RuntimeState.TurnState} PlayerGuardValue:{RuntimeState.Player.GuardValue} EnemyPrepStack:{RuntimeState.Enemy.EnemyPrepStack} EnemyGuard:{RuntimeState.Enemy.EnemyGuard}/{RuntimeState.Enemy.MaxEnemyGuard} EnemyGroggyPending:{RuntimeState.Enemy.GroggyPending} EnemyGroggyActive:{RuntimeState.Enemy.GroggyActive}");
+        Debug.Log($"[Combat] Sand State - Total:{RuntimeState.TotalSand} Upper:{RuntimeState.UpperSand} Lower:{RuntimeState.LowerSand} Locked:{RuntimeState.LockedSand}");
+        Debug.Log($"[Combat] State - TurnIndex:{RuntimeState.TurnIndex} TurnState:{RuntimeState.TurnState} PlayerGuard:{RuntimeState.Player.GuardValue} EnemyThreat:{RuntimeState.Enemy.EnemyThreat}/{RuntimeState.ThreatCap} EnemyGuard:{RuntimeState.Enemy.EnemyGuard}/{RuntimeState.Enemy.MaxEnemyGuard} EnemyGroggyPending:{RuntimeState.Enemy.GroggyPending} EnemyGroggyActive:{RuntimeState.Enemy.GroggyActive}");
         ValidateRuntimeInvariants();
     }
 
     private void ValidateRuntimeInvariants()
     {
+        if (RuntimeState == null || RuntimeState.Player == null || RuntimeState.Enemy == null)
+        {
+            return;
+        }
+
+        if (RuntimeState.UpperSand < 0 || RuntimeState.LowerSand < 0 || RuntimeState.LockedSand < 0)
+        {
+            Debug.LogWarning("[Combat] Invariant warning: Sand bucket value below zero detected.");
+        }
+
+        int total = RuntimeState.TotalSand;
+        int sum = RuntimeState.UpperSand + RuntimeState.LowerSand + RuntimeState.LockedSand;
+        if (sum != total)
+        {
+            Debug.LogWarning($"[Combat] Invariant warning: Upper+Lower+Locked({sum}) != Total({total}).");
+        }
+
         if (RuntimeState.Player.AvailableSand < 0 || RuntimeState.Enemy.AvailableSand < 0)
         {
             Debug.LogWarning("[Combat] Invariant warning: AvailableSand < 0 detected.");
         }
 
-        if (RuntimeState.Player.TransferredSand > RuntimeState.Player.MaxActionSand || RuntimeState.Enemy.TransferredSand > RuntimeState.Enemy.MaxActionSand)
+        if (RuntimeState.Enemy.EnemyThreat > RuntimeState.ThreatCap)
         {
-            Debug.LogWarning("[Combat] Invariant warning: TransferredSand > MaxActionSand detected.");
-        }
-
-        if (RuntimeState.Player.TransferredSand + RuntimeState.FlipTransfer > RuntimeState.MaxTransferSand
-            || RuntimeState.Enemy.TransferredSand + RuntimeState.FlipTransfer > RuntimeState.MaxTransferSand)
-        {
-            Debug.LogWarning("[Combat] Invariant warning: TransferredSand + FlipTransfer > MaxTransferSand detected.");
-        }
-
-        if (RuntimeState.Enemy.EnemyPrepStack > RuntimeState.PrepCap)
-        {
-            Debug.LogWarning("[Combat] Invariant warning: EnemyPrepStack > PrepCap detected.");
+            Debug.LogWarning("[Combat] Invariant warning: EnemyThreat > ThreatCap detected.");
         }
 
         if (RuntimeState.Enemy.EnemyGuard < 0)
@@ -467,9 +627,6 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
         if (!HasRequiredActionData(CombatActionType.Pierce)) return false;
         if (!HasRequiredActionData(CombatActionType.Hex)) return false;
         if (!HasRequiredActionData(CombatActionType.Guard)) return false;
-        if (!HasRequiredActionData(CombatActionType.Prepare)) return false;
-        if (!HasRequiredActionData(CombatActionType.WeakAttack)) return false;
-        if (!HasRequiredActionData(CombatActionType.DesperationStrike)) return false;
 
         return true;
     }
@@ -527,7 +684,7 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
             RuntimeState.Player.TransferredSand,
             RuntimeState.Enemy.TransferredSand,
             RuntimeState.Player.GuardValue,
-            RuntimeState.Enemy.EnemyPrepStack,
+            RuntimeState.Enemy.EnemyThreat,
             RuntimeState.Enemy.EnemyGuard,
             RuntimeState.Enemy.GroggyPending,
             RuntimeState.Enemy.GroggyActive);

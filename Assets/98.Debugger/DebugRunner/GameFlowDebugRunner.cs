@@ -6,10 +6,16 @@ using UnityEngine;
 public class GameFlowDebugRunner : MonoBehaviour
 {
     [SerializeField] private bool _autoEnterPlaying = true;
+    [SerializeField] private bool _onlyWhenBootingState = true;
 
     private void Start()
     {
         if (!_autoEnterPlaying)
+        {
+            return;
+        }
+
+        if (_onlyWhenBootingState && GameManager.Instance != null && GameManager.Instance.CurrentState != GameState.Booting)
         {
             return;
         }

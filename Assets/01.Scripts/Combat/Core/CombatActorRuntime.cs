@@ -8,12 +8,12 @@ public class CombatActorRuntime
     public CombatActorType ActorType;
     public int MaxHp;
     public int CurrentHp;
-    public int MaxActionSand = 3;
+    public int MaxActionSand = 10;
     public int AvailableSand;
     public int SpentSand;
     public int TransferredSand;
     public int GuardValue;
-    public int EnemyPrepStack;
+    public int EnemyThreat;
     public int EnemyGuard;
     public int MaxEnemyGuard;
     public bool GroggyPending;
@@ -25,7 +25,7 @@ public class CombatActorRuntime
 
     public bool CanSpend(int cost)
     {
-        return cost > 0 && AvailableSand >= cost && TransferredSand + cost <= MaxActionSand;
+        return cost > 0 && AvailableSand >= cost;
     }
 
     public bool SpendSand(int cost)
@@ -97,11 +97,6 @@ public class CombatActorRuntime
             return "AvailableSand insufficient";
         }
 
-        if (TransferredSand + cost > MaxActionSand)
-        {
-            return "TransferredSand + Cost > MaxActionSand";
-        }
-
         return null;
     }
 
@@ -125,7 +120,7 @@ public class CombatActorRuntime
             SpentSand = 0,
             TransferredSand = 0,
             GuardValue = data.baseGuard,
-            EnemyPrepStack = 0,
+            EnemyThreat = 0,
             EnemyGuard = isEnemy ? safeInitialEnemyGuard : 0,
             MaxEnemyGuard = isEnemy ? safeInitialEnemyGuard : 0,
             GroggyPending = false,

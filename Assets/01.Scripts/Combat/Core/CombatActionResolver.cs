@@ -37,7 +37,7 @@ public readonly struct CombatActionResult
 /// </summary>
 public class CombatActionResolver
 {
-    public CombatActionResult Resolve(CombatActorRuntime source, CombatActorRuntime target, CombatActionDataSO actionData, int maxEnemyGuard, int prepCap)
+    public CombatActionResult Resolve(CombatActorRuntime source, CombatActorRuntime target, CombatActionDataSO actionData, int maxEnemyGuard, int hexThreatDelta)
     {
         CombatActionType actionType = actionData != null ? actionData.actionType : CombatActionType.None;
         if (source == null || target == null || source.IsDead || target.IsDead)
@@ -48,11 +48,6 @@ public class CombatActionResolver
         if (actionData == null)
         {
             return new CombatActionResult(actionType, false, 0, 0, false, false, "ActionData missing");
-        }
-
-        if (actionType == CombatActionType.DesperationStrike)
-        {
-            return ResolveDesperationStrike(source, target, actionData);
         }
 
         int cost = actionData.sandCost;
@@ -66,11 +61,6 @@ public class CombatActionResolver
             int damage = ApplyDamage(target, actionData.baseDamage);
             bool breakTriggered = ApplyEnemyGuardDamage(target, actionData.breakPower, maxEnemyGuard);
             bool groggyTriggered = ApplyGroggy(target, breakTriggered);
-            if (breakTriggered)
-            {
-                target.EnemyPrepStack = 0;
-            }
-
             return new CombatActionResult(actionType, true, cost, damage, breakTriggered, groggyTriggered);
         }
 
@@ -79,11 +69,6 @@ public class CombatActionResolver
             int damage = ApplyDamage(target, actionData.baseDamage);
             bool breakTriggered = ApplyEnemyGuardDamage(target, actionData.breakPower, maxEnemyGuard);
             bool groggyTriggered = ApplyGroggy(target, breakTriggered);
-            if (breakTriggered)
-            {
-                target.EnemyPrepStack = 0;
-            }
-
             return new CombatActionResult(actionType, true, cost, damage, breakTriggered, groggyTriggered);
         }
 
@@ -92,12 +77,7 @@ public class CombatActionResolver
             int damage = ApplyDamage(target, actionData.baseDamage);
             bool breakTriggered = ApplyEnemyGuardDamage(target, actionData.breakPower, maxEnemyGuard);
             bool groggyTriggered = ApplyGroggy(target, breakTriggered);
-            if (breakTriggered)
-            {
-                target.EnemyPrepStack = 0;
-            }
-
-            target.EnemyPrepStack = target.EnemyPrepStack > 0 ? target.EnemyPrepStack - 1 : 0;
+            target.EnemyThreat = Mathf.Max(0, target.EnemyThreat + hexThreatDelta);
             return new CombatActionResult(actionType, true, cost, damage, breakTriggered, groggyTriggered);
         }
 
@@ -107,38 +87,27 @@ public class CombatActionResolver
             return new CombatActionResult(actionType, true, cost, 0, false, false);
         }
 
-        if (actionType == CombatActionType.Prepare)
-        {
-            source.EnemyPrepStack += actionData.prepGain;
-            if (source.EnemyPrepStack > prepCap)
-            {
-                source.EnemyPrepStack = prepCap;
-            }
-
-            return new CombatActionResult(actionType, true, cost, 0, false, false);
-        }
-
-        if (actionType == CombatActionType.WeakAttack)
-        {
-            int damage = ApplyDamage(target, actionData.baseDamage + source.EnemyPrepStack);
-            source.EnemyPrepStack = 0;
-            return new CombatActionResult(actionType, true, cost, damage, false, false);
-        }
-
         return new CombatActionResult(actionType, false, 0, 0, false, false, "Unsupported action type.");
     }
 
-    private CombatActionResult ResolveDesperationStrike(CombatActorRuntime source, CombatActorRuntime target, CombatActionDataSO actionData)
+    public static int ApplyEnemyIntentDamage(CombatActorRuntime source, CombatActorRuntime target, int damage)
     {
-        if (!source.SpendDesperationSand(out string spendFailureReason))
+        if (source == null || target == null || source.IsDead || target.IsDead || damage <= 0)
         {
-            return new CombatActionResult(CombatActionType.DesperationStrike, false, 0, 0, false, false, spendFailureReason);
+            return 0;
         }
 
-        const int spent = 1;
-        int damage = ApplyDamage(target, actionData.baseDamage + source.EnemyPrepStack);
-        source.EnemyPrepStack = 0;
-        return new CombatActionResult(CombatActionType.DesperationStrike, true, spent, damage, false, false);
+        return ApplyDamage(target, damage);
+    }
+
+    public static void ApplyEnemyRecoverGuard(CombatActorRuntime enemy, int amount)
+    {
+        if (enemy == null || enemy.ActorType != CombatActorType.Enemy || amount <= 0)
+        {
+            return;
+        }
+
+        enemy.EnemyGuard = Mathf.Clamp(enemy.EnemyGuard + amount, 0, Mathf.Max(1, enemy.MaxEnemyGuard));
     }
 
     private static int ApplyDamage(CombatActorRuntime target, int rawDamage)

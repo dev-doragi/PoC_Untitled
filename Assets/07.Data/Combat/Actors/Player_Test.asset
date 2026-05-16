@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: Player_Test
   m_EditorClassIdentifier: Assembly-CSharp::CombatActorDataSO
   actorType: 1
-  maxHp: 30
+  maxHp: 36
   initialSand: 0
   baseGuard: 0

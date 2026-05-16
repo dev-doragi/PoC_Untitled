@@ -13,7 +13,7 @@ public readonly struct CombatLogSnapshot
     public readonly int player_transferred_sand;
     public readonly int enemy_transferred_sand;
     public readonly int player_guard_value;
-    public readonly int enemy_prep_stack;
+    public readonly int enemy_threat;
     public readonly int enemy_guard_value;
     public readonly bool enemy_groggy_pending;
     public readonly bool enemy_groggy_active;
@@ -32,7 +32,7 @@ public readonly struct CombatLogSnapshot
         int playerTransferredSand,
         int enemyTransferredSand,
         int playerGuardValue,
-        int enemyPrepStack,
+        int enemyThreat,
         int enemyGuardValue,
         bool enemyGroggyPending,
         bool enemyGroggyActive)
@@ -50,7 +50,7 @@ public readonly struct CombatLogSnapshot
         player_transferred_sand = playerTransferredSand;
         enemy_transferred_sand = enemyTransferredSand;
         player_guard_value = playerGuardValue;
-        enemy_prep_stack = enemyPrepStack;
+        enemy_threat = enemyThreat;
         enemy_guard_value = enemyGuardValue;
         enemy_groggy_pending = enemyGroggyPending;
         enemy_groggy_active = enemyGroggyActive;
@@ -145,6 +145,32 @@ public readonly struct CombatEndedEvent
     public CombatEndedEvent(bool playerWon, CombatLogSnapshot snapshot)
     {
         PlayerWon = playerWon;
+        Snapshot = snapshot;
+    }
+}
+
+public readonly struct CombatMinimumFallAppliedEvent
+{
+    public readonly CombatActorType Actor;
+    public readonly int ForcedAmount;
+    public readonly int MinimumFall;
+
+    public CombatMinimumFallAppliedEvent(CombatActorType actor, int forcedAmount, int minimumFall)
+    {
+        Actor = actor;
+        ForcedAmount = forcedAmount;
+        MinimumFall = minimumFall;
+    }
+}
+
+public readonly struct CombatBonusTurnGrantedEvent
+{
+    public readonly CombatActorType Actor;
+    public readonly CombatLogSnapshot Snapshot;
+
+    public CombatBonusTurnGrantedEvent(CombatActorType actor, CombatLogSnapshot snapshot)
+    {
+        Actor = actor;
         Snapshot = snapshot;
     }
 }

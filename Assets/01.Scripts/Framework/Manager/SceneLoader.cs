@@ -6,6 +6,8 @@ using System.Collections;
 public class SceneLoader : Singleton<SceneLoader>
 {
     private bool _isLoading;
+    private bool _hasPendingPostLoadState;
+    private GameState _pendingPostLoadState = GameState.None;
 
     protected override void OnBootstrap()
     {
@@ -23,7 +25,22 @@ public class SceneLoader : Singleton<SceneLoader>
 
     public void RequestLoad(string sceneName)
     {
-        EventBus.Instance.Publish(new SceneLoadRequestedEvent { SceneName = sceneName });
+        EventBus.Instance.Publish(new SceneLoadRequestedEvent
+        {
+            SceneName = sceneName,
+            HasPostLoadState = false,
+            PostLoadState = GameState.None
+        });
+    }
+
+    public void RequestLoad(string sceneName, GameState postLoadState)
+    {
+        EventBus.Instance.Publish(new SceneLoadRequestedEvent
+        {
+            SceneName = sceneName,
+            HasPostLoadState = true,
+            PostLoadState = postLoadState
+        });
     }
 
     private void OnSceneLoadRequested(SceneLoadRequestedEvent evt)
@@ -39,6 +56,9 @@ public class SceneLoader : Singleton<SceneLoader>
             Debug.LogError($"[SceneLoader] Already loading another scene. Request ignored: {evt.SceneName}", this);
             return;
         }
+
+        _hasPendingPostLoadState = evt.HasPostLoadState;
+        _pendingPostLoadState = evt.PostLoadState;
 
         StartCoroutine(LoadSceneAsyncRoutine(evt.SceneName));
     }
@@ -68,5 +88,13 @@ public class SceneLoader : Singleton<SceneLoader>
         TimeManager.Instance?.ResetTime();
         _isLoading = false;
         EventBus.Instance.Publish(new SceneLoadedEvent { SceneName = scene.name });
+
+        if (_hasPendingPostLoadState && GameManager.Instance != null)
+        {
+            GameManager.Instance.ChangeState(_pendingPostLoadState);
+        }
+
+        _hasPendingPostLoadState = false;
+        _pendingPostLoadState = GameState.None;
     }
 }

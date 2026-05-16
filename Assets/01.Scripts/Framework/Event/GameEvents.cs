@@ -20,6 +20,8 @@ public struct PauseRequestedEvent
 public struct SceneLoadRequestedEvent
 {
     public string SceneName;
+    public bool HasPostLoadState;
+    public GameState PostLoadState;
 }
 
 public struct SceneLoadedEvent

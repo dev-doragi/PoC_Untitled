@@ -7,7 +7,7 @@ public class GameManager : Singleton<GameManager>
 
     protected override void OnBootstrap()
     {
-        ChangeState(GameState.Booting);
+        ChangeState(GameState.MainMenu);
     }
 
     public void ChangeState(GameState newState)

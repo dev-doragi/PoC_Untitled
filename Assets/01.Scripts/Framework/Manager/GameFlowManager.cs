@@ -91,6 +91,21 @@ public class GameFlowManager : Singleton<GameFlowManager>
             return;
         }
 
+        if (evt.NewState == GameState.Paused)
+        {
+            return;
+        }
+
+        if (evt.NewState == GameState.Loading)
+        {
+            if (CurrentState != InGameState.None)
+            {
+                ChangeState(InGameState.None);
+            }
+
+            return;
+        }
+
         if (CurrentState != InGameState.None)
         {
             ChangeState(InGameState.None);
