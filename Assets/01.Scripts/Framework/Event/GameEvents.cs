@@ -79,6 +79,11 @@ public struct LookInputEvent
 public struct SubmitInputEvent { }
 public struct CancelInputEvent { }
 public struct PauseInputEvent { }
+public struct CombatStrikeInputEvent { }
+public struct CombatPierceInputEvent { }
+public struct CombatHexInputEvent { }
+public struct CombatGuardInputEvent { }
+public struct CombatEndTurnInputEvent { }
 
 public struct PrimaryActionInputEvent
 {

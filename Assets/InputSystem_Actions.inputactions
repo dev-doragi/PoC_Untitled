@@ -1088,6 +1088,114 @@
             ]
         },
         {
+            "name": "Combat",
+            "id": "9dfe0d10-c2a3-4f7e-89d5-0ec537f87319",
+            "actions": [
+                {
+                    "name": "Strike",
+                    "type": "Button",
+                    "id": "ab19a6bf-cf87-4b1a-827a-9a7b97f3e001",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Pierce",
+                    "type": "Button",
+                    "id": "ab19a6bf-cf87-4b1a-827a-9a7b97f3e002",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Hex",
+                    "type": "Button",
+                    "id": "ab19a6bf-cf87-4b1a-827a-9a7b97f3e003",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Guard",
+                    "type": "Button",
+                    "id": "ab19a6bf-cf87-4b1a-827a-9a7b97f3e004",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "EndTurn",
+                    "type": "Button",
+                    "id": "ab19a6bf-cf87-4b1a-827a-9a7b97f3e005",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "ab19a6bf-cf87-4b1a-827a-9a7b97f3f001",
+                    "path": "<Keyboard>/q",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "Strike",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "ab19a6bf-cf87-4b1a-827a-9a7b97f3f002",
+                    "path": "<Keyboard>/w",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "Pierce",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "ab19a6bf-cf87-4b1a-827a-9a7b97f3f003",
+                    "path": "<Keyboard>/e",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "Hex",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "ab19a6bf-cf87-4b1a-827a-9a7b97f3f004",
+                    "path": "<Keyboard>/r",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "Guard",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "ab19a6bf-cf87-4b1a-827a-9a7b97f3f005",
+                    "path": "<Keyboard>/f",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "EndTurn",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        },
+        {
             "name": "System",
             "id": "2428108a-2451-4cf4-83cd-0806516b1971",
             "actions": [

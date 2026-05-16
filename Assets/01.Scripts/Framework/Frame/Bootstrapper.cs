@@ -47,6 +47,7 @@ public class Bootstrapper : MonoBehaviour
         success &= BootstrapRequired(SceneLoader.Instance, nameof(SceneLoader));
         success &= BootstrapRequired(TimeManager.Instance, nameof(TimeManager));
         success &= BootstrapRequired(PauseManager.Instance, nameof(PauseManager));
+        success &= BootstrapOptional(FindAnyObjectByType<UIManager>(), nameof(UIManager));
         success &= BootstrapRequired(SoundManager.Instance, nameof(SoundManager));
         success &= BootstrapRequired(PoolManager.Instance, nameof(PoolManager));
         success &= BootstrapRequired(HourglassCombatManager.Instance, nameof(HourglassCombatManager));
@@ -67,6 +68,18 @@ public class Bootstrapper : MonoBehaviour
         {
             Debug.LogError($"[Bootstrapper] Missing required manager instance: {managerName}", this);
             return false;
+        }
+
+        manager.BootstrapIfNeeded();
+        return true;
+    }
+
+    private bool BootstrapOptional(ISingletonBootstrap manager, string managerName)
+    {
+        if (manager == null)
+        {
+            Debug.LogWarning($"[Bootstrapper] Optional manager instance not found: {managerName}", this);
+            return true;
         }
 
         manager.BootstrapIfNeeded();

@@ -38,6 +38,11 @@ public class CombatScreenPresenter : MonoBehaviour
         EventBus.Instance.Subscribe<CombatBreakTriggeredEvent>(OnCombatBreakTriggered);
         EventBus.Instance.Subscribe<CombatGroggyAppliedEvent>(OnCombatGroggyApplied);
         EventBus.Instance.Subscribe<CombatEndedEvent>(OnCombatEnded);
+        EventBus.Instance.Subscribe<CombatStrikeInputEvent>(OnCombatStrikeInput);
+        EventBus.Instance.Subscribe<CombatPierceInputEvent>(OnCombatPierceInput);
+        EventBus.Instance.Subscribe<CombatHexInputEvent>(OnCombatHexInput);
+        EventBus.Instance.Subscribe<CombatGuardInputEvent>(OnCombatGuardInput);
+        EventBus.Instance.Subscribe<CombatEndTurnInputEvent>(OnCombatEndTurnInput);
     }
 
     private void Start()
@@ -64,6 +69,11 @@ public class CombatScreenPresenter : MonoBehaviour
         EventBus.Instance.Unsubscribe<CombatBreakTriggeredEvent>(OnCombatBreakTriggered);
         EventBus.Instance.Unsubscribe<CombatGroggyAppliedEvent>(OnCombatGroggyApplied);
         EventBus.Instance.Unsubscribe<CombatEndedEvent>(OnCombatEnded);
+        EventBus.Instance.Unsubscribe<CombatStrikeInputEvent>(OnCombatStrikeInput);
+        EventBus.Instance.Unsubscribe<CombatPierceInputEvent>(OnCombatPierceInput);
+        EventBus.Instance.Unsubscribe<CombatHexInputEvent>(OnCombatHexInput);
+        EventBus.Instance.Unsubscribe<CombatGuardInputEvent>(OnCombatGuardInput);
+        EventBus.Instance.Unsubscribe<CombatEndTurnInputEvent>(OnCombatEndTurnInput);
     }
 
     private void OnCombatStarted(CombatStartedEvent evt)
@@ -168,35 +178,11 @@ public class CombatScreenPresenter : MonoBehaviour
             return;
         }
 
-        BindButton(actionPanelView.StrikeButton, () =>
-        {
-            CacheCombatManager();
-            _combatManager?.RequestStrike();
-        });
-
-        BindButton(actionPanelView.PierceButton, () =>
-        {
-            CacheCombatManager();
-            _combatManager?.RequestPierce();
-        });
-
-        BindButton(actionPanelView.HexButton, () =>
-        {
-            CacheCombatManager();
-            _combatManager?.RequestHex();
-        });
-
-        BindButton(actionPanelView.GuardButton, () =>
-        {
-            CacheCombatManager();
-            _combatManager?.RequestGuard();
-        });
-
-        BindButton(actionPanelView.EndTurnButton, () =>
-        {
-            CacheCombatManager();
-            _combatManager?.RequestEndTurn();
-        });
+        BindButton(actionPanelView.StrikeButton, RequestStrike);
+        BindButton(actionPanelView.PierceButton, RequestPierce);
+        BindButton(actionPanelView.HexButton, RequestHex);
+        BindButton(actionPanelView.GuardButton, RequestGuard);
+        BindButton(actionPanelView.EndTurnButton, RequestEndTurn);
     }
 
     private void BindButton(Button button, UnityEngine.Events.UnityAction action)
@@ -312,6 +298,52 @@ public class CombatScreenPresenter : MonoBehaviour
         {
             enemySpriteRenderer.gameObject.SetActive(state.Enemy != null && state.Enemy.CurrentHp > 0);
         }
+    }
+
+    private void OnCombatStrikeInput(CombatStrikeInputEvent evt) => TryRequestFromInput(actionPanelView != null ? actionPanelView.StrikeButton : null, RequestStrike);
+    private void OnCombatPierceInput(CombatPierceInputEvent evt) => TryRequestFromInput(actionPanelView != null ? actionPanelView.PierceButton : null, RequestPierce);
+    private void OnCombatHexInput(CombatHexInputEvent evt) => TryRequestFromInput(actionPanelView != null ? actionPanelView.HexButton : null, RequestHex);
+    private void OnCombatGuardInput(CombatGuardInputEvent evt) => TryRequestFromInput(actionPanelView != null ? actionPanelView.GuardButton : null, RequestGuard);
+    private void OnCombatEndTurnInput(CombatEndTurnInputEvent evt) => TryRequestFromInput(actionPanelView != null ? actionPanelView.EndTurnButton : null, RequestEndTurn);
+
+    private static void TryRequestFromInput(Button button, System.Action request)
+    {
+        if (button == null || request == null || !button.interactable)
+        {
+            return;
+        }
+
+        request.Invoke();
+    }
+
+    private void RequestStrike()
+    {
+        CacheCombatManager();
+        _combatManager?.RequestStrike();
+    }
+
+    private void RequestPierce()
+    {
+        CacheCombatManager();
+        _combatManager?.RequestPierce();
+    }
+
+    private void RequestHex()
+    {
+        CacheCombatManager();
+        _combatManager?.RequestHex();
+    }
+
+    private void RequestGuard()
+    {
+        CacheCombatManager();
+        _combatManager?.RequestGuard();
+    }
+
+    private void RequestEndTurn()
+    {
+        CacheCombatManager();
+        _combatManager?.RequestEndTurn();
     }
 
 }

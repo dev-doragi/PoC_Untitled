@@ -1174,6 +1174,114 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
             ]
         },
         {
+            ""name"": ""Combat"",
+            ""id"": ""9dfe0d10-c2a3-4f7e-89d5-0ec537f87319"",
+            ""actions"": [
+                {
+                    ""name"": ""Strike"",
+                    ""type"": ""Button"",
+                    ""id"": ""ab19a6bf-cf87-4b1a-827a-9a7b97f3e001"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Pierce"",
+                    ""type"": ""Button"",
+                    ""id"": ""ab19a6bf-cf87-4b1a-827a-9a7b97f3e002"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Hex"",
+                    ""type"": ""Button"",
+                    ""id"": ""ab19a6bf-cf87-4b1a-827a-9a7b97f3e003"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Guard"",
+                    ""type"": ""Button"",
+                    ""id"": ""ab19a6bf-cf87-4b1a-827a-9a7b97f3e004"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""EndTurn"",
+                    ""type"": ""Button"",
+                    ""id"": ""ab19a6bf-cf87-4b1a-827a-9a7b97f3e005"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                }
+            ],
+            ""bindings"": [
+                {
+                    ""name"": """",
+                    ""id"": ""ab19a6bf-cf87-4b1a-827a-9a7b97f3f001"",
+                    ""path"": ""<Keyboard>/q"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""Strike"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""ab19a6bf-cf87-4b1a-827a-9a7b97f3f002"",
+                    ""path"": ""<Keyboard>/w"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""Pierce"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""ab19a6bf-cf87-4b1a-827a-9a7b97f3f003"",
+                    ""path"": ""<Keyboard>/e"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""Hex"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""ab19a6bf-cf87-4b1a-827a-9a7b97f3f004"",
+                    ""path"": ""<Keyboard>/r"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""Guard"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""ab19a6bf-cf87-4b1a-827a-9a7b97f3f005"",
+                    ""path"": ""<Keyboard>/f"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""EndTurn"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                }
+            ]
+        },
+        {
             ""name"": ""System"",
             ""id"": ""2428108a-2451-4cf4-83cd-0806516b1971"",
             ""actions"": [
@@ -1290,6 +1398,13 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         m_UI_ScrollWheel = m_UI.FindAction("ScrollWheel", throwIfNotFound: true);
         m_UI_TrackedDevicePosition = m_UI.FindAction("TrackedDevicePosition", throwIfNotFound: true);
         m_UI_TrackedDeviceOrientation = m_UI.FindAction("TrackedDeviceOrientation", throwIfNotFound: true);
+        // Combat
+        m_Combat = asset.FindActionMap("Combat", throwIfNotFound: true);
+        m_Combat_Strike = m_Combat.FindAction("Strike", throwIfNotFound: true);
+        m_Combat_Pierce = m_Combat.FindAction("Pierce", throwIfNotFound: true);
+        m_Combat_Hex = m_Combat.FindAction("Hex", throwIfNotFound: true);
+        m_Combat_Guard = m_Combat.FindAction("Guard", throwIfNotFound: true);
+        m_Combat_EndTurn = m_Combat.FindAction("EndTurn", throwIfNotFound: true);
         // System
         m_System = asset.FindActionMap("System", throwIfNotFound: true);
         m_System_Pause = m_System.FindAction("Pause", throwIfNotFound: true);
@@ -1299,6 +1414,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
     {
         UnityEngine.Debug.Assert(!m_Player.enabled, "This will cause a leak and performance issues, InputSystem_Actions.Player.Disable() has not been called.");
         UnityEngine.Debug.Assert(!m_UI.enabled, "This will cause a leak and performance issues, InputSystem_Actions.UI.Disable() has not been called.");
+        UnityEngine.Debug.Assert(!m_Combat.enabled, "This will cause a leak and performance issues, InputSystem_Actions.Combat.Disable() has not been called.");
         UnityEngine.Debug.Assert(!m_System.enabled, "This will cause a leak and performance issues, InputSystem_Actions.System.Disable() has not been called.");
     }
 
@@ -1773,6 +1889,146 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
     /// </summary>
     public UIActions @UI => new UIActions(this);
 
+    // Combat
+    private readonly InputActionMap m_Combat;
+    private List<ICombatActions> m_CombatActionsCallbackInterfaces = new List<ICombatActions>();
+    private readonly InputAction m_Combat_Strike;
+    private readonly InputAction m_Combat_Pierce;
+    private readonly InputAction m_Combat_Hex;
+    private readonly InputAction m_Combat_Guard;
+    private readonly InputAction m_Combat_EndTurn;
+    /// <summary>
+    /// Provides access to input actions defined in input action map "Combat".
+    /// </summary>
+    public struct CombatActions
+    {
+        private @InputSystem_Actions m_Wrapper;
+
+        /// <summary>
+        /// Construct a new instance of the input action map wrapper class.
+        /// </summary>
+        public CombatActions(@InputSystem_Actions wrapper) { m_Wrapper = wrapper; }
+        /// <summary>
+        /// Provides access to the underlying input action "Combat/Strike".
+        /// </summary>
+        public InputAction @Strike => m_Wrapper.m_Combat_Strike;
+        /// <summary>
+        /// Provides access to the underlying input action "Combat/Pierce".
+        /// </summary>
+        public InputAction @Pierce => m_Wrapper.m_Combat_Pierce;
+        /// <summary>
+        /// Provides access to the underlying input action "Combat/Hex".
+        /// </summary>
+        public InputAction @Hex => m_Wrapper.m_Combat_Hex;
+        /// <summary>
+        /// Provides access to the underlying input action "Combat/Guard".
+        /// </summary>
+        public InputAction @Guard => m_Wrapper.m_Combat_Guard;
+        /// <summary>
+        /// Provides access to the underlying input action "Combat/EndTurn".
+        /// </summary>
+        public InputAction @EndTurn => m_Wrapper.m_Combat_EndTurn;
+        /// <summary>
+        /// Provides access to the underlying input action map instance.
+        /// </summary>
+        public InputActionMap Get() { return m_Wrapper.m_Combat; }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Enable()" />
+        public void Enable() { Get().Enable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Disable()" />
+        public void Disable() { Get().Disable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.enabled" />
+        public bool enabled => Get().enabled;
+        /// <summary>
+        /// Implicitly converts an <see ref="CombatActions" /> to an <see ref="InputActionMap" /> instance.
+        /// </summary>
+        public static implicit operator InputActionMap(CombatActions set) { return set.Get(); }
+        /// <summary>
+        /// Adds <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <param name="instance">Callback instance.</param>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c> or <paramref name="instance"/> have already been added this method does nothing.
+        /// </remarks>
+        /// <seealso cref="CombatActions" />
+        public void AddCallbacks(ICombatActions instance)
+        {
+            if (instance == null || m_Wrapper.m_CombatActionsCallbackInterfaces.Contains(instance)) return;
+            m_Wrapper.m_CombatActionsCallbackInterfaces.Add(instance);
+            @Strike.started += instance.OnStrike;
+            @Strike.performed += instance.OnStrike;
+            @Strike.canceled += instance.OnStrike;
+            @Pierce.started += instance.OnPierce;
+            @Pierce.performed += instance.OnPierce;
+            @Pierce.canceled += instance.OnPierce;
+            @Hex.started += instance.OnHex;
+            @Hex.performed += instance.OnHex;
+            @Hex.canceled += instance.OnHex;
+            @Guard.started += instance.OnGuard;
+            @Guard.performed += instance.OnGuard;
+            @Guard.canceled += instance.OnGuard;
+            @EndTurn.started += instance.OnEndTurn;
+            @EndTurn.performed += instance.OnEndTurn;
+            @EndTurn.canceled += instance.OnEndTurn;
+        }
+
+        /// <summary>
+        /// Removes <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <remarks>
+        /// Calling this method when <paramref name="instance" /> have not previously been registered has no side-effects.
+        /// </remarks>
+        /// <seealso cref="CombatActions" />
+        private void UnregisterCallbacks(ICombatActions instance)
+        {
+            @Strike.started -= instance.OnStrike;
+            @Strike.performed -= instance.OnStrike;
+            @Strike.canceled -= instance.OnStrike;
+            @Pierce.started -= instance.OnPierce;
+            @Pierce.performed -= instance.OnPierce;
+            @Pierce.canceled -= instance.OnPierce;
+            @Hex.started -= instance.OnHex;
+            @Hex.performed -= instance.OnHex;
+            @Hex.canceled -= instance.OnHex;
+            @Guard.started -= instance.OnGuard;
+            @Guard.performed -= instance.OnGuard;
+            @Guard.canceled -= instance.OnGuard;
+            @EndTurn.started -= instance.OnEndTurn;
+            @EndTurn.performed -= instance.OnEndTurn;
+            @EndTurn.canceled -= instance.OnEndTurn;
+        }
+
+        /// <summary>
+        /// Unregisters <param cref="instance" /> and unregisters all input action callbacks via <see cref="CombatActions.UnregisterCallbacks(ICombatActions)" />.
+        /// </summary>
+        /// <seealso cref="CombatActions.UnregisterCallbacks(ICombatActions)" />
+        public void RemoveCallbacks(ICombatActions instance)
+        {
+            if (m_Wrapper.m_CombatActionsCallbackInterfaces.Remove(instance))
+                UnregisterCallbacks(instance);
+        }
+
+        /// <summary>
+        /// Replaces all existing callback instances and previously registered input action callbacks associated with them with callbacks provided via <param cref="instance" />.
+        /// </summary>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c>, calling this method will only unregister all existing callbacks but not register any new callbacks.
+        /// </remarks>
+        /// <seealso cref="CombatActions.AddCallbacks(ICombatActions)" />
+        /// <seealso cref="CombatActions.RemoveCallbacks(ICombatActions)" />
+        /// <seealso cref="CombatActions.UnregisterCallbacks(ICombatActions)" />
+        public void SetCallbacks(ICombatActions instance)
+        {
+            foreach (var item in m_Wrapper.m_CombatActionsCallbackInterfaces)
+                UnregisterCallbacks(item);
+            m_Wrapper.m_CombatActionsCallbackInterfaces.Clear();
+            AddCallbacks(instance);
+        }
+    }
+    /// <summary>
+    /// Provides a new <see cref="CombatActions" /> instance referencing this action map.
+    /// </summary>
+    public CombatActions @Combat => new CombatActions(this);
+
     // System
     private readonly InputActionMap m_System;
     private List<ISystemActions> m_SystemActionsCallbackInterfaces = new List<ISystemActions>();
@@ -2095,6 +2351,49 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnTrackedDeviceOrientation(InputAction.CallbackContext context);
+    }
+    /// <summary>
+    /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Combat" which allows adding and removing callbacks.
+    /// </summary>
+    /// <seealso cref="CombatActions.AddCallbacks(ICombatActions)" />
+    /// <seealso cref="CombatActions.RemoveCallbacks(ICombatActions)" />
+    public interface ICombatActions
+    {
+        /// <summary>
+        /// Method invoked when associated input action "Strike" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnStrike(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Pierce" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnPierce(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Hex" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnHex(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Guard" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnGuard(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "EndTurn" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnEndTurn(InputAction.CallbackContext context);
     }
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "System" which allows adding and removing callbacks.

@@ -9,6 +9,7 @@ public class InputReader : Singleton<InputReader>
     [SerializeField] private string _playerActionMapName = "Player";
     [SerializeField] private string _uiActionMapName = "UI";
     [SerializeField] private string _systemActionMapName = "System";
+    [SerializeField] private string _combatActionMapName = "Combat";
 
     [Header("Player Actions")]
     [SerializeField] private string _moveActionName = "Move";
@@ -21,10 +22,18 @@ public class InputReader : Singleton<InputReader>
     [SerializeField] private string _cancelActionName = "Cancel";
     [SerializeField] private string _pauseActionName = "Pause";
 
+    [Header("Combat Actions")]
+    [SerializeField] private string _strikeActionName = "Strike";
+    [SerializeField] private string _pierceActionName = "Pierce";
+    [SerializeField] private string _hexActionName = "Hex";
+    [SerializeField] private string _guardActionName = "Guard";
+    [SerializeField] private string _endTurnActionName = "EndTurn";
+
     private PlayerInput _playerInput;
     private InputActionMap _playerMap;
     private InputActionMap _uiMap;
     private InputActionMap _systemMap;
+    private InputActionMap _combatMap;
 
     private InputAction _move;
     private InputAction _look;
@@ -33,6 +42,11 @@ public class InputReader : Singleton<InputReader>
     private InputAction _submit;
     private InputAction _cancel;
     private InputAction _pause;
+    private InputAction _strike;
+    private InputAction _pierce;
+    private InputAction _hex;
+    private InputAction _guard;
+    private InputAction _endTurn;
 
     protected override void OnBootstrap()
     {
@@ -46,10 +60,11 @@ public class InputReader : Singleton<InputReader>
         _playerMap = _playerInput.actions.FindActionMap(_playerActionMapName, false);
         _uiMap = _playerInput.actions.FindActionMap(_uiActionMapName, false);
         _systemMap = _playerInput.actions.FindActionMap(_systemActionMapName, false);
+        _combatMap = _playerInput.actions.FindActionMap(_combatActionMapName, false);
 
-        if (_playerMap == null || _uiMap == null || _systemMap == null)
+        if (_playerMap == null || _uiMap == null || _systemMap == null || _combatMap == null)
         {
-            Debug.LogError("[InputReader] Required action map is missing. Expected: Player/UI/System", this);
+            Debug.LogError("[InputReader] Required action map is missing. Expected: Player/UI/System/Combat", this);
             return;
         }
 
@@ -60,7 +75,12 @@ public class InputReader : Singleton<InputReader>
         _submit = RequireAction(_uiMap, _submitActionName);
         _cancel = RequireAction(_uiMap, _cancelActionName);
         _pause = RequireAction(_systemMap, _pauseActionName);
-        if (_move == null || _look == null || _primary == null || _secondary == null || _submit == null || _cancel == null || _pause == null)
+        _strike = RequireAction(_combatMap, _strikeActionName);
+        _pierce = RequireAction(_combatMap, _pierceActionName);
+        _hex = RequireAction(_combatMap, _hexActionName);
+        _guard = RequireAction(_combatMap, _guardActionName);
+        _endTurn = RequireAction(_combatMap, _endTurnActionName);
+        if (_move == null || _look == null || _primary == null || _secondary == null || _submit == null || _cancel == null || _pause == null || _strike == null || _pierce == null || _hex == null || _guard == null || _endTurn == null)
         {
             return;
         }
@@ -69,6 +89,7 @@ public class InputReader : Singleton<InputReader>
         _playerMap.Enable();
         _uiMap.Enable();
         _systemMap.Enable();
+        _combatMap.Enable();
 
         _playerInput.onControlsChanged += OnControlsChanged;
     }
@@ -85,6 +106,7 @@ public class InputReader : Singleton<InputReader>
         _playerMap?.Disable();
         _uiMap?.Disable();
         _systemMap?.Disable();
+        _combatMap?.Disable();
     }
 
     private InputAction RequireAction(InputActionMap map, string actionName)
@@ -113,6 +135,11 @@ public class InputReader : Singleton<InputReader>
         _submit.performed += OnSubmit;
         _cancel.performed += OnCancel;
         _pause.performed += OnPause;
+        _strike.performed += OnStrike;
+        _pierce.performed += OnPierce;
+        _hex.performed += OnHex;
+        _guard.performed += OnGuard;
+        _endTurn.performed += OnEndTurn;
     }
 
     private void Unbind()
@@ -144,6 +171,11 @@ public class InputReader : Singleton<InputReader>
         if (_submit != null) _submit.performed -= OnSubmit;
         if (_cancel != null) _cancel.performed -= OnCancel;
         if (_pause != null) _pause.performed -= OnPause;
+        if (_strike != null) _strike.performed -= OnStrike;
+        if (_pierce != null) _pierce.performed -= OnPierce;
+        if (_hex != null) _hex.performed -= OnHex;
+        if (_guard != null) _guard.performed -= OnGuard;
+        if (_endTurn != null) _endTurn.performed -= OnEndTurn;
     }
 
     private static void OnControlsChanged(PlayerInput input)
@@ -163,4 +195,9 @@ public class InputReader : Singleton<InputReader>
     private static void OnSubmit(InputAction.CallbackContext _) => EventBus.Instance.Publish(new SubmitInputEvent());
     private static void OnCancel(InputAction.CallbackContext _) => EventBus.Instance.Publish(new CancelInputEvent());
     private static void OnPause(InputAction.CallbackContext _) => EventBus.Instance.Publish(new PauseInputEvent());
+    private static void OnStrike(InputAction.CallbackContext _) => EventBus.Instance.Publish(new CombatStrikeInputEvent());
+    private static void OnPierce(InputAction.CallbackContext _) => EventBus.Instance.Publish(new CombatPierceInputEvent());
+    private static void OnHex(InputAction.CallbackContext _) => EventBus.Instance.Publish(new CombatHexInputEvent());
+    private static void OnGuard(InputAction.CallbackContext _) => EventBus.Instance.Publish(new CombatGuardInputEvent());
+    private static void OnEndTurn(InputAction.CallbackContext _) => EventBus.Instance.Publish(new CombatEndTurnInputEvent());
 }
