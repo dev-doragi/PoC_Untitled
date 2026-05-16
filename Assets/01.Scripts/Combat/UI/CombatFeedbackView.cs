@@ -1,5 +1,5 @@
+using System.Collections.Generic;
 using DG.Tweening;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -10,17 +10,42 @@ public class CombatFeedbackView : MonoBehaviour
 {
     [SerializeField] private RectTransform _popupLayer;
     [SerializeField] private Image _screenFlashImage;
+    [SerializeField] private string _popupPrefabName = "PopupToast";
+    [SerializeField] private Color _defaultFlashColor = Color.white;
+    [SerializeField] [Range(0f, 1f)] private float _flashPeakAlpha = 0.12f;
+    [SerializeField] private float _flashFadeInDuration = 0.04f;
+    [SerializeField] private float _flashFadeOutDuration = 0.14f;
 
-    private TMP_FontAsset _font;
     private Canvas _canvas;
+    private readonly Queue<PopupRequest> _popupQueue = new();
+    private bool _isPopupPlaying;
+    private bool _poolMissingLogged;
 
-    public void Initialize(TMP_FontAsset font)
+    private struct PopupRequest
     {
-        _font = font != null ? font : TMP_Settings.defaultFontAsset;
+        public RectTransform Anchor;
+        public string Message;
+        public Color Color;
+        public float FontSize;
+        public float LifeTime;
+    }
+
+    public void Initialize()
+    {
         _canvas = GetComponentInParent<Canvas>();
     }
 
-    public void PlayScreenPulse(Color c)
+    public void PlayScreenPulse()
+    {
+        PlayScreenPulse(_defaultFlashColor, _flashPeakAlpha);
+    }
+
+    public void PlayScreenPulse(Color color)
+    {
+        PlayScreenPulse(color, _flashPeakAlpha);
+    }
+
+    public void PlayScreenPulse(Color color, float peakAlpha)
     {
         if (_screenFlashImage == null)
         {
@@ -28,65 +53,119 @@ public class CombatFeedbackView : MonoBehaviour
         }
 
         _screenFlashImage.DOKill();
-        _screenFlashImage.color = new Color(c.r, c.g, c.b, 0f);
-        _screenFlashImage.DOFade(0.18f, 0.05f).OnComplete(() => _screenFlashImage.DOFade(0f, 0.18f));
+        _screenFlashImage.color = new Color(color.r, color.g, color.b, 0f);
+        float safePeakAlpha = Mathf.Clamp01(peakAlpha);
+        float fadeIn = Mathf.Max(0.01f, _flashFadeInDuration);
+        float fadeOut = Mathf.Max(0.01f, _flashFadeOutDuration);
+        _screenFlashImage.DOFade(safePeakAlpha, fadeIn).OnComplete(() => _screenFlashImage.DOFade(0f, fadeOut));
     }
 
     public void SpawnDamagePopup(RectTransform anchor, int value, Color c)
     {
-        if (_popupLayer == null || value <= 0)
+        if (value <= 0)
         {
             return;
         }
 
-        SpawnPopup(anchor, value.ToString(), c, 42f, 0.42f);
+        EnqueuePopup(new PopupRequest
+        {
+            Anchor = anchor,
+            Message = value.ToString(),
+            Color = c,
+            FontSize = 42f,
+            LifeTime = 0.42f
+        });
     }
 
     public void ShowBreakText(RectTransform anchor)
     {
-        SpawnPopup(anchor, "BREAK", new Color(1f, 0.9f, 0.2f, 1f), 45f, 0.5f);
+        EnqueuePopup(new PopupRequest
+        {
+            Anchor = anchor,
+            Message = "BREAK",
+            Color = new Color(1f, 0.9f, 0.2f, 1f),
+            FontSize = 52f,
+            LifeTime = 0.55f
+        });
     }
 
     public void ShowGroggyText(RectTransform anchor)
     {
-        SpawnPopup(anchor, "GROGGY", new Color(0.45f, 0.9f, 1f, 1f), 42f, 0.5f);
+        EnqueuePopup(new PopupRequest
+        {
+            Anchor = anchor,
+            Message = "GROGGY",
+            Color = new Color(0.45f, 0.9f, 1f, 1f),
+            FontSize = 44f,
+            LifeTime = 0.55f
+        });
     }
 
-    private void SpawnPopup(RectTransform anchor, string textValue, Color color, float size, float life)
+    private void EnqueuePopup(PopupRequest request)
     {
-        if (_popupLayer == null)
+        _popupQueue.Enqueue(request);
+        if (!_isPopupPlaying)
         {
+            PlayNextPopup();
+        }
+    }
+
+    private void PlayNextPopup()
+    {
+        if (_popupQueue.Count == 0)
+        {
+            _isPopupPlaying = false;
             return;
         }
 
-        Vector2 basePos = ResolveLocal(anchor);
+        _isPopupPlaying = true;
+        PopupRequest request = _popupQueue.Dequeue();
+        Vector2 anchoredPosition = ResolveLocal(request.Anchor);
 
-        GameObject go = new GameObject("Popup", typeof(RectTransform), typeof(CanvasGroup), typeof(TextMeshProUGUI));
-        RectTransform rt = go.GetComponent<RectTransform>();
-        rt.SetParent(_popupLayer, false);
-        rt.sizeDelta = new Vector2(280f, 90f);
-        rt.anchoredPosition = basePos;
+        if (_popupLayer == null)
+        {
+            _isPopupPlaying = false;
+            PlayNextPopup();
+            return;
+        }
 
-        CanvasGroup cg = go.GetComponent<CanvasGroup>();
-        cg.alpha = 0f;
+        if (!PoolManager.IsExisted || PoolManager.Instance == null)
+        {
+            if (!_poolMissingLogged)
+            {
+                Debug.LogWarning("[CombatFeedbackView] PoolManager instance is missing. Popup feedback will be skipped.");
+                _poolMissingLogged = true;
+            }
 
-        TMP_Text t = go.GetComponent<TMP_Text>();
-        t.font = _font != null ? _font : TMP_Settings.defaultFontAsset;
-        t.text = textValue;
-        t.color = color;
-        t.fontSize = size;
-        t.fontStyle = FontStyles.Bold;
-        t.alignment = TextAlignmentOptions.Center;
-        t.textWrappingMode = TextWrappingModes.NoWrap;
-        t.overflowMode = TextOverflowModes.Overflow;
-        t.raycastTarget = false;
+            _isPopupPlaying = false;
+            PlayNextPopup();
+            return;
+        }
 
-        Sequence seq = DOTween.Sequence();
-        seq.Append(cg.DOFade(1f, 0.06f));
-        seq.Join(rt.DOScale(1.15f, 0.12f).SetEase(Ease.OutBack));
-        seq.Join(rt.DOAnchorPosY(basePos.y + 70f, life).SetEase(Ease.OutQuad));
-        seq.Append(cg.DOFade(0f, 0.18f));
-        seq.OnComplete(() => Destroy(go));
+        GameObject popupObject = PoolManager.Instance.SpawnUI(_popupPrefabName, _popupLayer, anchoredPosition);
+        if (popupObject == null)
+        {
+            _isPopupPlaying = false;
+            PlayNextPopup();
+            return;
+        }
+
+        PopupToast toast = popupObject.GetComponent<PopupToast>();
+        if (toast == null)
+        {
+            PoolManager.Instance.Despawn(popupObject);
+            _isPopupPlaying = false;
+            PlayNextPopup();
+            return;
+        }
+
+        toast.Play(
+            request.Message,
+            request.Color,
+            request.FontSize,
+            anchoredPosition,
+            request.LifeTime,
+            OnPopupPlayComplete);
     }
 
     private Vector2 ResolveLocal(RectTransform target)
@@ -104,5 +183,16 @@ public class CombatFeedbackView : MonoBehaviour
         Vector2 screen = RectTransformUtility.WorldToScreenPoint(_canvas != null ? _canvas.worldCamera : null, target.position);
         RectTransformUtility.ScreenPointToLocalPointInRectangle(_popupLayer, screen, _canvas != null ? _canvas.worldCamera : null, out Vector2 local);
         return local;
+    }
+
+    private void OnPopupPlayComplete(PopupToast toast)
+    {
+        if (toast != null && PoolManager.IsExisted && PoolManager.Instance != null)
+        {
+            PoolManager.Instance.Despawn(toast.gameObject);
+        }
+
+        _isPopupPlaying = false;
+        PlayNextPopup();
     }
 }

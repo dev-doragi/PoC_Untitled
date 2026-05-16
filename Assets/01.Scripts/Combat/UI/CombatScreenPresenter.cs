@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
 /// <summary>
 /// Connects inspector-wired combat UI views to combat runtime state and combat events.
@@ -49,7 +48,7 @@ public class CombatScreenPresenter : MonoBehaviour
             hourglassView?.SetFlipDuration(_combatManager.FlipDuration);
         }
 
-        combatFeedbackView?.Initialize(TMP_Settings.defaultFontAsset);
+        combatFeedbackView?.Initialize();
         actionPanelView?.SetStaticTexts();
         BindButtons();
         RefreshViews();
@@ -118,8 +117,7 @@ public class CombatScreenPresenter : MonoBehaviour
         CombatActorPanelView target = evt.Snapshot.actor == CombatActorType.Player ? playerStatusView : enemyStatusView;
         target?.PlayHitReaction();
         combatFeedbackView?.SpawnDamagePopup(target?.PopupAnchor, evt.Snapshot.damage, evt.Snapshot.actor == CombatActorType.Player ? new Color(1f, 0.35f, 0.35f, 1f) : new Color(1f, 0.65f, 0.3f, 1f));
-        combatFeedbackView?.PlayScreenPulse(evt.Snapshot.actor == CombatActorType.Player ? new Color(1f, 0.15f, 0.15f, 1f) : new Color(1f, 0.55f, 0.2f, 1f));
-        PublishShake(evt.Snapshot.actor == CombatActorType.Player ? ShakeIntensity.Medium : ShakeIntensity.Weak);
+        combatFeedbackView?.PlayScreenPulse();
         combatLogView?.AddLog($"Damage {evt.Snapshot.damage}");
         RefreshViews();
     }
@@ -128,8 +126,7 @@ public class CombatScreenPresenter : MonoBehaviour
     {
         CombatActorPanelView target = evt.Snapshot.actor == CombatActorType.Player ? playerStatusView : enemyStatusView;
         combatFeedbackView?.ShowBreakText(target?.PopupAnchor);
-        combatFeedbackView?.PlayScreenPulse(new Color(1f, 0.9f, 0.2f, 1f));
-        PublishShake(ShakeIntensity.Strong);
+        combatFeedbackView?.PlayScreenPulse();
         combatLogView?.AddLog("BREAK");
         RefreshViews();
     }
@@ -138,8 +135,7 @@ public class CombatScreenPresenter : MonoBehaviour
     {
         CombatActorPanelView target = evt.Snapshot.actor == CombatActorType.Player ? playerStatusView : enemyStatusView;
         combatFeedbackView?.ShowGroggyText(target?.PopupAnchor);
-        combatFeedbackView?.PlayScreenPulse(new Color(0.45f, 0.9f, 1f, 1f));
-        PublishShake(ShakeIntensity.Medium);
+        combatFeedbackView?.PlayScreenPulse();
         combatLogView?.AddLog("GROGGY");
         RefreshViews();
     }
@@ -316,11 +312,6 @@ public class CombatScreenPresenter : MonoBehaviour
         {
             enemySpriteRenderer.gameObject.SetActive(state.Enemy != null && state.Enemy.CurrentHp > 0);
         }
-    }
-
-    private static void PublishShake(ShakeIntensity intensity)
-    {
-        EventBus.Instance.Publish(new CameraShakeEvent { Intensity = intensity });
     }
 
 }

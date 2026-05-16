@@ -5,7 +5,18 @@ using UnityEngine.Pool;
 [DefaultExecutionOrder(-71)]
 public class PoolManager : Singleton<PoolManager>
 {
+    [System.Serializable]
+    private struct PoolEntry
+    {
+        public string Key;
+        public GameObject Prefab;
+        public int InitialSize;
+        public int MaxSize;
+    }
+
     [SerializeField] private Transform _poolRoot;
+    [SerializeField] private RectTransform _uiPoolRoot;
+    [SerializeField] private PoolEntry[] _globalPools;
     [SerializeField] private bool _clearPoolsOnSceneLoaded;
 
     private readonly Dictionary<string, IObjectPool<GameObject>> _pools = new();
@@ -19,6 +30,16 @@ public class PoolManager : Singleton<PoolManager>
             DontDestroyOnLoad(root);
             _poolRoot = root.transform;
         }
+
+        if (_uiPoolRoot == null)
+        {
+            GameObject uiRoot = new GameObject("UIPoolRoot", typeof(RectTransform));
+            RectTransform rect = uiRoot.GetComponent<RectTransform>();
+            rect.SetParent(_poolRoot, false);
+            _uiPoolRoot = rect;
+        }
+
+        RegisterGlobalPools();
 
         EventBus.Instance.Subscribe<SceneLoadedEvent>(OnSceneLoaded);
     }
@@ -54,7 +75,15 @@ public class PoolManager : Singleton<PoolManager>
             actionOnRelease: instance =>
             {
                 instance.SetActive(false);
-                instance.transform.SetParent(_poolRoot);
+                RectTransform rect = instance.GetComponent<RectTransform>();
+                if (rect != null && _uiPoolRoot != null)
+                {
+                    rect.SetParent(_uiPoolRoot, false);
+                }
+                else
+                {
+                    instance.transform.SetParent(_poolRoot, false);
+                }
             },
             actionOnDestroy: Destroy,
             collectionCheck: false,
@@ -72,6 +101,37 @@ public class PoolManager : Singleton<PoolManager>
 
         GameObject instance = pool.Get();
         instance.transform.SetPositionAndRotation(position, rotation);
+        return instance;
+    }
+
+    public GameObject SpawnUI(string prefabName, RectTransform parent, Vector2 anchoredPosition)
+    {
+        if (parent == null)
+        {
+            Debug.LogError("[PoolManager] SpawnUI failed: parent is null.", this);
+            return null;
+        }
+
+        if (!_pools.TryGetValue(prefabName, out IObjectPool<GameObject> pool))
+        {
+            Debug.LogError($"[PoolManager] SpawnUI failed: pool key not found ({prefabName}).", this);
+            return null;
+        }
+
+        GameObject instance = pool.Get();
+        RectTransform rect = instance.GetComponent<RectTransform>();
+        if (rect == null)
+        {
+            pool.Release(instance);
+            Debug.LogError($"[PoolManager] SpawnUI failed: pooled object is not UI ({prefabName}).", this);
+            return null;
+        }
+
+        rect.SetParent(parent, false);
+        rect.anchoredPosition = anchoredPosition;
+        rect.localRotation = Quaternion.identity;
+        rect.localScale = Vector3.one;
+        instance.SetActive(true);
         return instance;
     }
 
@@ -125,5 +185,24 @@ public class PoolManager : Singleton<PoolManager>
 
         _pools.Clear();
         _prefabs.Clear();
+    }
+
+    private void RegisterGlobalPools()
+    {
+        if (_globalPools == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < _globalPools.Length; i++)
+        {
+            PoolEntry entry = _globalPools[i];
+            if (string.IsNullOrWhiteSpace(entry.Key) || entry.Prefab == null)
+            {
+                continue;
+            }
+
+            RegisterPool(entry.Key, entry.Prefab, Mathf.Max(1, entry.InitialSize), Mathf.Max(1, entry.MaxSize));
+        }
     }
 }
