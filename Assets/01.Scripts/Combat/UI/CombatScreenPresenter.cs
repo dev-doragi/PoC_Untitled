@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 /// <summary>
 /// Connects inspector-wired combat UI views to combat runtime state and combat events.
@@ -20,7 +21,7 @@ public class CombatScreenPresenter : MonoBehaviour
     [Header("Action Costs")]
     [SerializeField] private int strikeCost = 3;
     [SerializeField] private int pierceCost = 3;
-    [SerializeField] private int hexCost = 2;
+    [SerializeField] private int hexCost = 3;
     [SerializeField] private int guardCost = 2;
 
     [Header("Bars")]
@@ -48,6 +49,7 @@ public class CombatScreenPresenter : MonoBehaviour
             hourglassView?.SetFlipDuration(_combatManager.FlipDuration);
         }
 
+        combatFeedbackView?.Initialize(TMP_Settings.defaultFontAsset);
         actionPanelView?.SetStaticTexts();
         BindButtons();
         RefreshViews();
@@ -115,18 +117,29 @@ public class CombatScreenPresenter : MonoBehaviour
     {
         CombatActorPanelView target = evt.Snapshot.actor == CombatActorType.Player ? playerStatusView : enemyStatusView;
         target?.PlayHitReaction();
+        combatFeedbackView?.SpawnDamagePopup(target?.PopupAnchor, evt.Snapshot.damage, evt.Snapshot.actor == CombatActorType.Player ? new Color(1f, 0.35f, 0.35f, 1f) : new Color(1f, 0.65f, 0.3f, 1f));
+        combatFeedbackView?.PlayScreenPulse(evt.Snapshot.actor == CombatActorType.Player ? new Color(1f, 0.15f, 0.15f, 1f) : new Color(1f, 0.55f, 0.2f, 1f));
+        PublishShake(evt.Snapshot.actor == CombatActorType.Player ? ShakeIntensity.Medium : ShakeIntensity.Weak);
         combatLogView?.AddLog($"Damage {evt.Snapshot.damage}");
         RefreshViews();
     }
 
     private void OnCombatBreakTriggered(CombatBreakTriggeredEvent evt)
     {
+        CombatActorPanelView target = evt.Snapshot.actor == CombatActorType.Player ? playerStatusView : enemyStatusView;
+        combatFeedbackView?.ShowBreakText(target?.PopupAnchor);
+        combatFeedbackView?.PlayScreenPulse(new Color(1f, 0.9f, 0.2f, 1f));
+        PublishShake(ShakeIntensity.Strong);
         combatLogView?.AddLog("BREAK");
         RefreshViews();
     }
 
     private void OnCombatGroggyApplied(CombatGroggyAppliedEvent evt)
     {
+        CombatActorPanelView target = evt.Snapshot.actor == CombatActorType.Player ? playerStatusView : enemyStatusView;
+        combatFeedbackView?.ShowGroggyText(target?.PopupAnchor);
+        combatFeedbackView?.PlayScreenPulse(new Color(0.45f, 0.9f, 1f, 1f));
+        PublishShake(ShakeIntensity.Medium);
         combatLogView?.AddLog("GROGGY");
         RefreshViews();
     }
@@ -215,7 +228,7 @@ public class CombatScreenPresenter : MonoBehaviour
         bool isEnemyTurn = state.TurnState == CombatTurnState.EnemyTurn;
 
         playerStatusView?.ApplyPlayerState(state.Player, isPlayerTurn, Mathf.Max(1f, playerGuardBarMax));
-        enemyStatusView?.ApplyEnemyState(state.Enemy, state.BreakThreshold, state.PrepCap, isEnemyTurn);
+        enemyStatusView?.ApplyEnemyState(state.Enemy, state.MaxEnemyGuard, state.PrepCap, isEnemyTurn);
         UpdateActorSpriteVisibility(state);
         hourglassView?.Refresh(state);
         UpdateEndTurnPreview(state);
@@ -273,7 +286,7 @@ public class CombatScreenPresenter : MonoBehaviour
         CombatActorRuntime currentActor = state.GetActor(state.TurnState);
         if (currentActor == null)
         {
-            actionPanelView.SetEndTurnPreview(0);
+            actionPanelView.SetEndTurnPreview(false, 0);
             return;
         }
 
@@ -284,7 +297,7 @@ public class CombatScreenPresenter : MonoBehaviour
             preview = Mathf.Max(0, Mathf.CeilToInt(preview * state.GroggyIncomingSandMultiplier));
         }
 
-        actionPanelView.SetEndTurnPreview(preview);
+        actionPanelView.SetEndTurnPreview(nextIsEnemy, preview);
     }
 
     private void UpdateActorSpriteVisibility(CombatRuntimeState state)
@@ -303,6 +316,11 @@ public class CombatScreenPresenter : MonoBehaviour
         {
             enemySpriteRenderer.gameObject.SetActive(state.Enemy != null && state.Enemy.CurrentHp > 0);
         }
+    }
+
+    private static void PublishShake(ShakeIntensity intensity)
+    {
+        EventBus.Instance.Publish(new CameraShakeEvent { Intensity = intensity });
     }
 
 }

@@ -14,7 +14,8 @@ public class CombatActorRuntime
     public int TransferredSand;
     public int GuardValue;
     public int EnemyPrepStack;
-    public int BreakProgress;
+    public int EnemyGuard;
+    public int MaxEnemyGuard;
     public bool GroggyPending;
     public bool GroggyActive;
 
@@ -104,12 +105,15 @@ public class CombatActorRuntime
         return null;
     }
 
-    public static CombatActorRuntime CreateFromData(CombatActorDataSO data, int initialSand, int maxActionSand)
+    public static CombatActorRuntime CreateFromData(CombatActorDataSO data, int initialSand, int maxActionSand, int initialEnemyGuard = 0)
     {
         if (data == null)
         {
             return null;
         }
+
+        bool isEnemy = data.actorType == CombatActorType.Enemy;
+        int safeInitialEnemyGuard = Mathf.Max(0, initialEnemyGuard);
 
         return new CombatActorRuntime
         {
@@ -122,7 +126,8 @@ public class CombatActorRuntime
             TransferredSand = 0,
             GuardValue = data.baseGuard,
             EnemyPrepStack = 0,
-            BreakProgress = 0,
+            EnemyGuard = isEnemy ? safeInitialEnemyGuard : 0,
+            MaxEnemyGuard = isEnemy ? safeInitialEnemyGuard : 0,
             GroggyPending = false,
             GroggyActive = false
         };

@@ -114,11 +114,11 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
             FlipTransfer = _config.flipTransfer,
             MaxTransferSand = _config.maxTransferSand,
             MinimumTurnSand = _config.minimumTurnSand,
-            BreakThreshold = _config.breakThreshold,
+            MaxEnemyGuard = Mathf.Max(1, _config.breakThreshold),
             PrepCap = _config.prepCap,
             GroggyIncomingSandMultiplier = _config.groggyIncomingSandMultiplier,
             Player = CombatActorRuntime.CreateFromData(_playerData, _config.defaultPlayerSand, _config.maxActionSand),
-            Enemy = CombatActorRuntime.CreateFromData(_enemyData, _config.defaultEnemySand, _config.maxActionSand)
+            Enemy = CombatActorRuntime.CreateFromData(_enemyData, _config.defaultEnemySand, _config.maxActionSand, Mathf.Max(1, _config.breakThreshold))
         };
 
         if (RuntimeState.Player == null || RuntimeState.Enemy == null)
@@ -156,7 +156,7 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
             RuntimeState.Player,
             RuntimeState.Enemy,
             actionData,
-            RuntimeState.BreakThreshold,
+            RuntimeState.MaxEnemyGuard,
             RuntimeState.PrepCap);
 
         if (!result.Succeeded)
@@ -292,7 +292,7 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
                 RuntimeState.Enemy,
                 RuntimeState.Player,
                 actionData,
-                RuntimeState.BreakThreshold,
+                RuntimeState.MaxEnemyGuard,
                 RuntimeState.PrepCap);
 
             if (!result.Succeeded)
@@ -398,7 +398,7 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
 
         Debug.Log($"[Combat] HP Changed - Player:{RuntimeState.Player.CurrentHp}/{RuntimeState.Player.MaxHp}, Enemy:{RuntimeState.Enemy.CurrentHp}/{RuntimeState.Enemy.MaxHp}");
         Debug.Log($"[Combat] flip transfer:{RuntimeState.FlipTransfer} | Sand Changed - Player A:{RuntimeState.Player.AvailableSand} T:{RuntimeState.Player.TransferredSand}, Enemy A:{RuntimeState.Enemy.AvailableSand} T:{RuntimeState.Enemy.TransferredSand}");
-        Debug.Log($"[Combat] State - TurnIndex:{RuntimeState.TurnIndex} TurnState:{RuntimeState.TurnState} PlayerGuardValue:{RuntimeState.Player.GuardValue} EnemyPrepStack:{RuntimeState.Enemy.EnemyPrepStack} EnemyBreakProgress:{RuntimeState.Enemy.BreakProgress} EnemyGroggyPending:{RuntimeState.Enemy.GroggyPending} EnemyGroggyActive:{RuntimeState.Enemy.GroggyActive}");
+        Debug.Log($"[Combat] State - TurnIndex:{RuntimeState.TurnIndex} TurnState:{RuntimeState.TurnState} PlayerGuardValue:{RuntimeState.Player.GuardValue} EnemyPrepStack:{RuntimeState.Enemy.EnemyPrepStack} EnemyGuard:{RuntimeState.Enemy.EnemyGuard}/{RuntimeState.Enemy.MaxEnemyGuard} EnemyGroggyPending:{RuntimeState.Enemy.GroggyPending} EnemyGroggyActive:{RuntimeState.Enemy.GroggyActive}");
         ValidateRuntimeInvariants();
     }
 
@@ -425,9 +425,9 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
             Debug.LogWarning("[Combat] Invariant warning: EnemyPrepStack > PrepCap detected.");
         }
 
-        if (RuntimeState.Enemy.BreakProgress < 0)
+        if (RuntimeState.Enemy.EnemyGuard < 0)
         {
-            Debug.LogWarning("[Combat] Invariant warning: BreakProgress < 0 detected.");
+            Debug.LogWarning("[Combat] Invariant warning: EnemyGuard < 0 detected.");
         }
     }
 
@@ -528,7 +528,7 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
             RuntimeState.Enemy.TransferredSand,
             RuntimeState.Player.GuardValue,
             RuntimeState.Enemy.EnemyPrepStack,
-            RuntimeState.Enemy.BreakProgress,
+            RuntimeState.Enemy.EnemyGuard,
             RuntimeState.Enemy.GroggyPending,
             RuntimeState.Enemy.GroggyActive);
     }

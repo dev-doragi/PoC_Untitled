@@ -89,7 +89,7 @@ public class CombatActorPanelView : MonoBehaviour
         ApplyTurnVisual(isCurrentTurn);
     }
 
-    public void ApplyEnemyState(CombatActorRuntime enemy, int breakThreshold, int prepCap, bool isCurrentTurn)
+    public void ApplyEnemyState(CombatActorRuntime enemy, int maxEnemyGuard, int prepCap, bool isCurrentTurn)
     {
         CacheVisualDefaults();
         if (enemy == null)
@@ -97,9 +97,9 @@ public class CombatActorPanelView : MonoBehaviour
             return;
         }
 
-        int safeBreakThreshold = Mathf.Max(1, breakThreshold);
+        int safeMaxEnemyGuard = Mathf.Max(1, maxEnemyGuard);
         int safePrepCap = Mathf.Max(1, prepCap);
-        int enemyGuardRemaining = Mathf.Clamp(safeBreakThreshold - enemy.BreakProgress, 0, safeBreakThreshold);
+        int enemyGuardRemaining = Mathf.Clamp(enemy.EnemyGuard, 0, safeMaxEnemyGuard);
 
         if (_hpText != null)
         {
@@ -116,13 +116,13 @@ public class CombatActorPanelView : MonoBehaviour
 
         if (_guardText != null)
         {
-            _guardText.text = $"{enemyGuardRemaining}/{safeBreakThreshold}";
+            _guardText.text = $"{enemyGuardRemaining}/{safeMaxEnemyGuard}";
         }
 
         if (_guardBar != null)
         {
             _guardBar.minValue = 0f;
-            _guardBar.maxValue = safeBreakThreshold;
+            _guardBar.maxValue = safeMaxEnemyGuard;
             _guardBar.value = enemyGuardRemaining;
             _guardBar.interactable = false;
         }

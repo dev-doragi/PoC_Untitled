@@ -14,7 +14,7 @@ public readonly struct CombatLogSnapshot
     public readonly int enemy_transferred_sand;
     public readonly int player_guard_value;
     public readonly int enemy_prep_stack;
-    public readonly int enemy_break_progress;
+    public readonly int enemy_guard_value;
     public readonly bool enemy_groggy_pending;
     public readonly bool enemy_groggy_active;
 
@@ -33,7 +33,7 @@ public readonly struct CombatLogSnapshot
         int enemyTransferredSand,
         int playerGuardValue,
         int enemyPrepStack,
-        int enemyBreakProgress,
+        int enemyGuardValue,
         bool enemyGroggyPending,
         bool enemyGroggyActive)
     {
@@ -51,7 +51,7 @@ public readonly struct CombatLogSnapshot
         enemy_transferred_sand = enemyTransferredSand;
         player_guard_value = playerGuardValue;
         enemy_prep_stack = enemyPrepStack;
-        enemy_break_progress = enemyBreakProgress;
+        enemy_guard_value = enemyGuardValue;
         enemy_groggy_pending = enemyGroggyPending;
         enemy_groggy_active = enemyGroggyActive;
     }

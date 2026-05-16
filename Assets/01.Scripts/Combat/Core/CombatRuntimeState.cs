@@ -11,7 +11,7 @@ public class CombatRuntimeState
     public int FlipTransfer;
     public int MaxTransferSand;
     public int MinimumTurnSand;
-    public int BreakThreshold;
+    public int MaxEnemyGuard;
     public int PrepCap;
     public float GroggyIncomingSandMultiplier;
 

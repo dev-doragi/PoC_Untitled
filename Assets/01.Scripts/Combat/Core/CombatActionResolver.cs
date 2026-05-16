@@ -1,3 +1,5 @@
+using UnityEngine;
+
 /// <summary>
 /// Result payload for a single combat action resolution.
 /// </summary>
@@ -35,7 +37,7 @@ public readonly struct CombatActionResult
 /// </summary>
 public class CombatActionResolver
 {
-    public CombatActionResult Resolve(CombatActorRuntime source, CombatActorRuntime target, CombatActionDataSO actionData, int breakThreshold, int prepCap)
+    public CombatActionResult Resolve(CombatActorRuntime source, CombatActorRuntime target, CombatActionDataSO actionData, int maxEnemyGuard, int prepCap)
     {
         CombatActionType actionType = actionData != null ? actionData.actionType : CombatActionType.None;
         if (source == null || target == null || source.IsDead || target.IsDead)
@@ -50,7 +52,7 @@ public class CombatActionResolver
 
         if (actionType == CombatActionType.DesperationStrike)
         {
-            return ResolveDesperationStrike(source, target, actionData, breakThreshold);
+            return ResolveDesperationStrike(source, target, actionData);
         }
 
         int cost = actionData.sandCost;
@@ -62,7 +64,7 @@ public class CombatActionResolver
         if (actionType == CombatActionType.Strike)
         {
             int damage = ApplyDamage(target, actionData.baseDamage);
-            bool breakTriggered = ApplyBreak(target, actionData.breakPower, breakThreshold);
+            bool breakTriggered = ApplyEnemyGuardDamage(target, actionData.breakPower, maxEnemyGuard);
             bool groggyTriggered = ApplyGroggy(target, breakTriggered);
             if (breakTriggered)
             {
@@ -75,7 +77,7 @@ public class CombatActionResolver
         if (actionType == CombatActionType.Pierce)
         {
             int damage = ApplyDamage(target, actionData.baseDamage);
-            bool breakTriggered = ApplyBreak(target, actionData.breakPower, breakThreshold);
+            bool breakTriggered = ApplyEnemyGuardDamage(target, actionData.breakPower, maxEnemyGuard);
             bool groggyTriggered = ApplyGroggy(target, breakTriggered);
             if (breakTriggered)
             {
@@ -88,7 +90,7 @@ public class CombatActionResolver
         if (actionType == CombatActionType.Hex)
         {
             int damage = ApplyDamage(target, actionData.baseDamage);
-            bool breakTriggered = ApplyBreak(target, actionData.breakPower, breakThreshold);
+            bool breakTriggered = ApplyEnemyGuardDamage(target, actionData.breakPower, maxEnemyGuard);
             bool groggyTriggered = ApplyGroggy(target, breakTriggered);
             if (breakTriggered)
             {
@@ -126,7 +128,7 @@ public class CombatActionResolver
         return new CombatActionResult(actionType, false, 0, 0, false, false, "Unsupported action type.");
     }
 
-    private CombatActionResult ResolveDesperationStrike(CombatActorRuntime source, CombatActorRuntime target, CombatActionDataSO actionData, int breakThreshold)
+    private CombatActionResult ResolveDesperationStrike(CombatActorRuntime source, CombatActorRuntime target, CombatActionDataSO actionData)
     {
         if (!source.SpendDesperationSand(out string spendFailureReason))
         {
@@ -163,15 +165,32 @@ public class CombatActionResolver
         return damage;
     }
 
-    private static bool ApplyBreak(CombatActorRuntime target, int breakDelta, int breakThreshold)
+    private static bool ApplyEnemyGuardDamage(CombatActorRuntime target, int enemyGuardDamage, int maxEnemyGuard)
     {
-        target.BreakProgress += breakDelta;
-        if (target.BreakProgress < breakThreshold)
+        if (target == null || target.ActorType != CombatActorType.Enemy || enemyGuardDamage <= 0)
         {
             return false;
         }
 
-        target.BreakProgress = 0;
+        // Guard is already broken and waiting for groggy cycle end.
+        if (target.GroggyPending || target.GroggyActive || target.EnemyGuard <= 0)
+        {
+            return false;
+        }
+
+        int safeMaxEnemyGuard = Mathf.Max(1, maxEnemyGuard);
+        if (target.MaxEnemyGuard <= 0)
+        {
+            target.MaxEnemyGuard = safeMaxEnemyGuard;
+        }
+
+        target.EnemyGuard -= enemyGuardDamage;
+        if (target.EnemyGuard > 0)
+        {
+            return false;
+        }
+
+        target.EnemyGuard = 0;
         return true;
     }
 

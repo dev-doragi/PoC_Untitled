@@ -38,6 +38,10 @@ public class CombatTurnProcessor
         if (endingActor.GroggyActive)
         {
             endingActor.GroggyActive = false;
+            if (endingActor.ActorType == CombatActorType.Enemy)
+            {
+                endingActor.EnemyGuard = Mathf.Max(1, endingActor.MaxEnemyGuard);
+            }
         }
 
         if (endingActor.ActorType == CombatActorType.Enemy && receivingActor.ActorType == CombatActorType.Player)
