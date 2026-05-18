@@ -8,6 +8,7 @@ public class CombatView : MonoBehaviour
     [SerializeField] private Transform enemyPivot;
     [SerializeField] private SpriteRenderer playerSpriteRenderer;
     [SerializeField] private SpriteRenderer enemySpriteRenderer;
+    [SerializeField] private bool enemyGroggyVisualLocked;
 
     private HourglassCombatManager _combatManager;
     private CombatActorDataSO _playerData;
@@ -26,8 +27,10 @@ public class CombatView : MonoBehaviour
     private void OnEnable()
     {
         EventBus.Instance.Subscribe<CombatStartedEvent>(OnCombatStarted);
+        EventBus.Instance.Subscribe<CombatTurnStartedEvent>(OnCombatTurnStarted);
         EventBus.Instance.Subscribe<CombatActionExecutedEvent>(OnCombatActionExecuted);
         EventBus.Instance.Subscribe<CombatActorDamagedEvent>(OnCombatActorDamaged);
+        EventBus.Instance.Subscribe<CombatGroggyAppliedEvent>(OnCombatGroggyApplied);
         EventBus.Instance.Subscribe<CombatEndedEvent>(OnCombatEnded);
     }
 
@@ -40,8 +43,10 @@ public class CombatView : MonoBehaviour
     private void OnDisable()
     {
         EventBus.Instance.Unsubscribe<CombatStartedEvent>(OnCombatStarted);
+        EventBus.Instance.Unsubscribe<CombatTurnStartedEvent>(OnCombatTurnStarted);
         EventBus.Instance.Unsubscribe<CombatActionExecutedEvent>(OnCombatActionExecuted);
         EventBus.Instance.Unsubscribe<CombatActorDamagedEvent>(OnCombatActorDamaged);
+        EventBus.Instance.Unsubscribe<CombatGroggyAppliedEvent>(OnCombatGroggyApplied);
         EventBus.Instance.Unsubscribe<CombatEndedEvent>(OnCombatEnded);
         KillAllSequences();
     }
@@ -51,6 +56,7 @@ public class CombatView : MonoBehaviour
         CacheCombatManager();
         CacheActorData();
         KillAllSequences();
+        enemyGroggyVisualLocked = false;
 
         InitializeActorVisual(CombatActorType.Player);
         InitializeActorVisual(CombatActorType.Enemy);
@@ -73,6 +79,26 @@ public class CombatView : MonoBehaviour
         }
     }
 
+    private void OnCombatTurnStarted(CombatTurnStartedEvent evt)
+    {
+        if (enemyGroggyVisualLocked && evt.Snapshot.turn_state == CombatTurnState.EnemyTurn)
+        {
+            enemyGroggyVisualLocked = false;
+            SpriteRenderer enemyRenderer = GetRenderer(CombatActorType.Enemy);
+            if (enemyRenderer != null && _enemyData != null && evt.Snapshot.enemy_hp > 0)
+            {
+                ApplySpriteIfExists(enemyRenderer, _enemyData.idleSprite);
+            }
+        }
+
+        if (enemyGroggyVisualLocked)
+        {
+            return;
+        }
+
+        UpdateEnemyGroggyVisualFromSnapshot(evt.Snapshot);
+    }
+
     private void OnCombatActorDamaged(CombatActorDamagedEvent evt)
     {
         if (evt.Snapshot.actor == CombatActorType.Player)
@@ -85,8 +111,26 @@ public class CombatView : MonoBehaviour
         }
     }
 
+    private void OnCombatGroggyApplied(CombatGroggyAppliedEvent evt)
+    {
+        if (evt.Snapshot.actor != CombatActorType.Enemy)
+        {
+            return;
+        }
+
+        SpriteRenderer renderer = GetRenderer(CombatActorType.Enemy);
+        if (renderer == null || _enemyData == null)
+        {
+            return;
+        }
+
+        enemyGroggyVisualLocked = true;
+        ApplySpriteIfExists(renderer, _enemyData.groggySprite);
+    }
+
     private void OnCombatEnded(CombatEndedEvent evt)
     {
+        enemyGroggyVisualLocked = false;
         if (evt.PlayerWon)
         {
             PlayDeathSequence(CombatActorType.Enemy);
@@ -94,6 +138,27 @@ public class CombatView : MonoBehaviour
         }
 
         PlayDeathSequence(CombatActorType.Player);
+    }
+
+    private void UpdateEnemyGroggyVisualFromSnapshot(CombatLogSnapshot snapshot)
+    {
+        SpriteRenderer renderer = GetRenderer(CombatActorType.Enemy);
+        if (renderer == null || _enemyData == null)
+        {
+            return;
+        }
+
+        bool isGroggy = snapshot.enemy_groggy_pending || snapshot.enemy_groggy_active;
+        if (isGroggy)
+        {
+            ApplySpriteIfExists(renderer, _enemyData.groggySprite);
+            return;
+        }
+
+        if (snapshot.enemy_hp > 0)
+        {
+            ApplySpriteIfExists(renderer, _enemyData.idleSprite);
+        }
     }
 
     private void InitializeActorVisual(CombatActorType actorType)
@@ -181,7 +246,14 @@ public class CombatView : MonoBehaviour
             }
             else
             {
-                ApplySpriteIfExists(renderer, data.idleSprite);
+                if (actorType == CombatActorType.Enemy && enemyGroggyVisualLocked)
+                {
+                    ApplySpriteIfExists(renderer, data.groggySprite);
+                }
+                else
+                {
+                    ApplySpriteIfExists(renderer, data.idleSprite);
+                }
             }
         });
 

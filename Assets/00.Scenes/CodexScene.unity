@@ -2014,7 +2014,7 @@ MonoBehaviour:
   _flashPeakAlpha: 0.12
   _flashFadeInDuration: 0.04
   _flashFadeOutDuration: 0.14
-  _popupSpawnInterval: 0.5
+  _popupSpawnInterval: 0.05
 --- !u!1 &371401040
 GameObject:
   m_ObjectHideFlags: 0
@@ -4226,7 +4226,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -0, y: -241}
+  m_AnchoredPosition: {x: 0, y: -241}
   m_SizeDelta: {x: 443.57, y: 41.34}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &978033733
@@ -5371,6 +5371,7 @@ MonoBehaviour:
   enemyPivot: {fileID: 1102490059}
   playerSpriteRenderer: {fileID: 1457830263}
   enemySpriteRenderer: {fileID: 1102490058}
+  enemyGroggyVisualLocked: 1
 --- !u!4 &1170769068
 Transform:
   m_ObjectHideFlags: 0

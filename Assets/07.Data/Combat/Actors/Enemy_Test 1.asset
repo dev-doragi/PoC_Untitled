@@ -19,6 +19,7 @@ MonoBehaviour:
   idleSprite: {fileID: -5588998997088224641, guid: c53f08d227796114597de804c5d901c0, type: 3}
   attackSprite: {fileID: -5588998997088224641, guid: c53f08d227796114597de804c5d901c0, type: 3}
   hitSprite: {fileID: -5588998997088224641, guid: c53f08d227796114597de804c5d901c0, type: 3}
+  groggySprite: {fileID: -6264708016172561700, guid: c53f08d227796114597de804c5d901c0, type: 3}
   deathSprite: {fileID: -6264708016172561700, guid: c53f08d227796114597de804c5d901c0, type: 3}
   attackMoveOffset: {x: 0.35, y: 0, z: 0}
   attackMoveDuration: 0.12

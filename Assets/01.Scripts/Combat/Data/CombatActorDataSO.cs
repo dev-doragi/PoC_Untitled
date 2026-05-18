@@ -14,6 +14,7 @@ public class CombatActorDataSO : ScriptableObject
     public Sprite idleSprite;
     public Sprite attackSprite;
     public Sprite hitSprite;
+    public Sprite groggySprite;
     public Sprite deathSprite;
 
     public Vector3 attackMoveOffset = new Vector3(0.35f, 0f, 0f);
