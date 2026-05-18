@@ -15,7 +15,7 @@ MonoBehaviour:
   actorType: 2
   maxHp: 24
   initialSand: 0
-  baseGuard: 9
+  baseGuard: 8
   idleSprite: {fileID: -5588998997088224641, guid: c53f08d227796114597de804c5d901c0, type: 3}
   attackSprite: {fileID: -5588998997088224641, guid: c53f08d227796114597de804c5d901c0, type: 3}
   hitSprite: {fileID: -5588998997088224641, guid: c53f08d227796114597de804c5d901c0, type: 3}
