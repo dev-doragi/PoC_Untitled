@@ -432,11 +432,7 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
 
         if (threatMax)
         {
-            if (upperSand <= 2) return EnemyIntentType.DesperationStrike;
-            if (upperSand <= 4) return EnemyIntentType.HeavyAttack;
-            if (upperSand <= 6) return EnemyIntentType.HeavyAttackPlus;
-            if (RuntimeState.AllowThreatMaxDoubleAction) return EnemyIntentType.DoubleAction;
-            return EnemyIntentType.HeavyAttackPlus;
+            return EnemyIntentType.DesperationStrike;
         }
 
         if (upperSand <= 2) return EnemyIntentType.RecoverGuard;
