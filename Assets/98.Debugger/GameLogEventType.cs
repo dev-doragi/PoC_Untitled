@@ -13,6 +13,7 @@ public enum GameLogEventType
     TimeScaleChanged,
     CameraShakeRequested,
     SoundRequested,
+    CombatEvent,
     ObjectSpawned,
     ObjectDespawned,
     Custom

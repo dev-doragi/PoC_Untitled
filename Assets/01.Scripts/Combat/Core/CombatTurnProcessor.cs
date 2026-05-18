@@ -5,6 +5,32 @@ using UnityEngine;
 /// </summary>
 public class CombatTurnProcessor
 {
+    public readonly struct TurnTransitionContext
+    {
+        public readonly CombatTurnState EndingTurnState;
+        public readonly int CompletedUpper;
+        public readonly int CompletedLower;
+        public readonly int TotalSand;
+        public readonly int ForcedFallAmount;
+        public readonly CombatActorType ForcedFallActor;
+
+        public TurnTransitionContext(
+            CombatTurnState endingTurnState,
+            int completedUpper,
+            int completedLower,
+            int totalSand,
+            int forcedFallAmount,
+            CombatActorType forcedFallActor)
+        {
+            EndingTurnState = endingTurnState;
+            CompletedUpper = completedUpper;
+            CompletedLower = completedLower;
+            TotalSand = totalSand;
+            ForcedFallAmount = forcedFallAmount;
+            ForcedFallActor = forcedFallActor;
+        }
+    }
+
     public readonly struct TurnTransitionResult
     {
         public readonly bool BonusTurnGranted;
@@ -21,21 +47,20 @@ public class CombatTurnProcessor
         }
     }
 
-    public TurnTransitionResult EndTurn(CombatRuntimeState runtimeState)
+    public TurnTransitionContext BeginTurnTransition(CombatRuntimeState runtimeState)
     {
         if (runtimeState == null || runtimeState.IsCombatEnded)
         {
-            return new TurnTransitionResult(false, CombatActorType.None, 0, CombatActorType.None);
+            return new TurnTransitionContext(CombatTurnState.None, 0, 0, 0, 0, CombatActorType.None);
+        }
+
+        CombatActorRuntime endingActor = runtimeState.GetActor(runtimeState.TurnState);
+        if (endingActor == null)
+        {
+            return new TurnTransitionContext(CombatTurnState.None, 0, 0, 0, 0, CombatActorType.None);
         }
 
         CombatTurnState endingTurnState = runtimeState.TurnState;
-        CombatActorRuntime endingActor = runtimeState.GetActor(runtimeState.TurnState);
-        CombatActorRuntime receivingActor = runtimeState.GetOpponent(runtimeState.TurnState);
-        if (endingActor == null || receivingActor == null)
-        {
-            return new TurnTransitionResult(false, CombatActorType.None, 0, CombatActorType.None);
-        }
-
         int completedUpper = Mathf.Max(0, runtimeState.UpperSand);
         int completedLower = Mathf.Max(0, runtimeState.LowerSand);
         int totalSand = Mathf.Max(0, runtimeState.TotalSand);
@@ -55,14 +80,38 @@ public class CombatTurnProcessor
             }
         }
 
+        return new TurnTransitionContext(
+            endingTurnState,
+            completedUpper,
+            completedLower,
+            totalSand,
+            forcedFallAmount,
+            forcedFallActor);
+    }
+
+    public TurnTransitionResult CompleteTurnTransition(CombatRuntimeState runtimeState, TurnTransitionContext context)
+    {
+        if (runtimeState == null || runtimeState.IsCombatEnded)
+        {
+            return new TurnTransitionResult(false, CombatActorType.None, 0, CombatActorType.None);
+        }
+
+        CombatTurnState endingTurnState = context.EndingTurnState;
+        CombatActorRuntime endingActor = runtimeState.GetActor(endingTurnState);
+        CombatActorRuntime receivingActor = runtimeState.GetOpponent(endingTurnState);
+        if (endingActor == null || receivingActor == null)
+        {
+            return new TurnTransitionResult(false, CombatActorType.None, context.ForcedFallAmount, context.ForcedFallActor);
+        }
+
         // Flip first: lower becomes next upper, upper becomes next lower.
-        int flippedUpper = Mathf.Clamp(completedLower, 0, totalSand);
-        int flippedLower = Mathf.Clamp(completedUpper, 0, totalSand);
+        int flippedUpper = Mathf.Clamp(context.CompletedLower, 0, context.TotalSand);
+        int flippedLower = Mathf.Clamp(context.CompletedUpper, 0, context.TotalSand);
 
         runtimeState.UpperSand = flippedUpper;
         runtimeState.LowerSand = flippedLower;
 
-        int spendableAfterFlip = Mathf.Max(0, totalSand - runtimeState.LockedSand - runtimeState.LowerSand);
+        int spendableAfterFlip = Mathf.Max(0, context.TotalSand - runtimeState.LockedSand - runtimeState.LowerSand);
         runtimeState.UpperSand = Mathf.Min(runtimeState.UpperSand, spendableAfterFlip);
 
         endingActor.ConsumeTurnSand();
@@ -117,6 +166,12 @@ public class CombatTurnProcessor
             runtimeState.TurnState = CombatTurnState.Ended;
         }
 
-        return new TurnTransitionResult(bonusTurnGranted, bonusActor, forcedFallAmount, forcedFallActor);
+        return new TurnTransitionResult(bonusTurnGranted, bonusActor, context.ForcedFallAmount, context.ForcedFallActor);
+    }
+
+    public TurnTransitionResult EndTurn(CombatRuntimeState runtimeState)
+    {
+        TurnTransitionContext context = BeginTurnTransition(runtimeState);
+        return CompleteTurnTransition(runtimeState, context);
     }
 }

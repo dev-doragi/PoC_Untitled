@@ -29,12 +29,15 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
     [SerializeField] private float _enemyTurnStartDelay = 0.4f;
     [SerializeField] private float _enemyActionDelay = 0.7f;
     [SerializeField] private float _enemyTurnEndDelay = 0.35f;
+    [SerializeField] private float _minimumFallTransitionDelay = 0.2f;
 
     private readonly CombatActionResolver _actionResolver = new CombatActionResolver();
     private readonly CombatTurnProcessor _turnProcessor = new CombatTurnProcessor();
     private readonly Dictionary<CombatActionType, CombatActionDataSO> _actionDataByType = new Dictionary<CombatActionType, CombatActionDataSO>();
     private Coroutine _enemyTurnRoutine;
+    private Coroutine _turnTransitionRoutine;
     private int? _nextCombatPlayerStartHpOverride;
+    private bool _isTurnTransitioning;
 
     public CombatRuntimeState RuntimeState { get; private set; }
     public float FlipDuration => Mathf.Max(0f, _flipDuration);
@@ -102,6 +105,12 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
         if (RuntimeState.IsCombatEnded)
         {
             Debug.LogWarning($"[Combat] Action Failed: {actionType} | Reason: CombatEnded state");
+            return;
+        }
+
+        if (_isTurnTransitioning)
+        {
+            Debug.LogWarning($"[Combat] Action Failed: {actionType} | Reason: TurnTransitioning");
             return;
         }
 
@@ -244,37 +253,12 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
 
     private void EndPlayerTurn()
     {
-        CombatTurnProcessor.TurnTransitionResult transitionResult = _turnProcessor.EndTurn(RuntimeState);
-        PublishTurnTransitionEvents(transitionResult);
-        EventBus.Instance.Publish(new CombatTurnEndedEvent(CreateSnapshot()));
-        Debug.Log("[Combat] Turn Ended: PlayerTurn");
-        PublishStateDebugLog();
-
-        if (RuntimeState.IsCombatEnded)
-        {
-            EndCombat(RuntimeState.Enemy.IsDead);
-            return;
-        }
-
-        EventBus.Instance.Publish(new CombatTurnStartedEvent(CreateSnapshot()));
-        Debug.Log($"[Combat] Turn Started: {RuntimeState.TurnState}");
-
-        if (RuntimeState.TurnState != CombatTurnState.EnemyTurn)
-        {
-            return;
-        }
-
-        if (_enemyTurnRoutine != null)
-        {
-            StopCoroutine(_enemyTurnRoutine);
-        }
-
-        _enemyTurnRoutine = StartCoroutine(RunEnemyTurnSequence());
+        StartTurnTransition(CombatTurnState.PlayerTurn);
     }
 
     private IEnumerator RunEnemyTurnSequence()
     {
-        if (RuntimeState == null || RuntimeState.IsCombatEnded || RuntimeState.TurnState != CombatTurnState.EnemyTurn)
+        if (RuntimeState == null || RuntimeState.IsCombatEnded || RuntimeState.TurnState != CombatTurnState.EnemyTurn || _isTurnTransitioning)
         {
             yield break;
         }
@@ -340,20 +324,100 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
 
     private void EndEnemyTurn()
     {
-        CombatTurnProcessor.TurnTransitionResult transitionResult = _turnProcessor.EndTurn(RuntimeState);
-        PublishTurnTransitionEvents(transitionResult);
+        StartTurnTransition(CombatTurnState.EnemyTurn);
+    }
+
+    private void StartTurnTransition(CombatTurnState endingTurnState)
+    {
+        if (_isTurnTransitioning || RuntimeState == null || RuntimeState.IsCombatEnded)
+        {
+            return;
+        }
+
+        if (_turnTransitionRoutine != null)
+        {
+            StopCoroutine(_turnTransitionRoutine);
+        }
+
+        _turnTransitionRoutine = StartCoroutine(RunTurnTransitionSequence(endingTurnState));
+    }
+
+    private IEnumerator RunTurnTransitionSequence(CombatTurnState endingTurnState)
+    {
+        _isTurnTransitioning = true;
+
+        CombatTurnProcessor.TurnTransitionContext transitionContext = _turnProcessor.BeginTurnTransition(RuntimeState);
+        if (transitionContext.ForcedFallAmount > 0)
+        {
+            ApplyPreFlipSandState(transitionContext);
+            EventBus.Instance.Publish(new CombatMinimumFallAppliedEvent(
+                transitionContext.ForcedFallActor,
+                transitionContext.ForcedFallAmount,
+                RuntimeState != null ? RuntimeState.MinimumFall : 0));
+
+            float wait = Mathf.Max(0f, _minimumFallTransitionDelay);
+            if (wait > 0f)
+            {
+                yield return new WaitForSeconds(wait);
+            }
+        }
+
+        CombatTurnProcessor.TurnTransitionResult transitionResult = _turnProcessor.CompleteTurnTransition(RuntimeState, transitionContext);
+        PublishTurnTransitionEvents(transitionResult, false);
         EventBus.Instance.Publish(new CombatTurnEndedEvent(CreateSnapshot()));
-        Debug.Log("[Combat] Turn Ended: EnemyTurn");
+        Debug.Log($"[Combat] Turn Ended: {endingTurnState}");
         PublishStateDebugLog();
 
-        if (RuntimeState.IsCombatEnded)
+        if (RuntimeState != null && RuntimeState.IsCombatEnded)
         {
+            _isTurnTransitioning = false;
+            _turnTransitionRoutine = null;
             EndCombat(RuntimeState.Enemy.IsDead);
-            return;
+            yield break;
         }
 
         EventBus.Instance.Publish(new CombatTurnStartedEvent(CreateSnapshot()));
         Debug.Log($"[Combat] Turn Started: {RuntimeState.TurnState}");
+
+        _isTurnTransitioning = false;
+        _turnTransitionRoutine = null;
+
+        if (RuntimeState == null || RuntimeState.TurnState != CombatTurnState.EnemyTurn)
+        {
+            yield break;
+        }
+
+        if (_enemyTurnRoutine != null)
+        {
+            StopCoroutine(_enemyTurnRoutine);
+        }
+
+        _enemyTurnRoutine = StartCoroutine(RunEnemyTurnSequence());
+    }
+
+    private void ApplyPreFlipSandState(CombatTurnProcessor.TurnTransitionContext context)
+    {
+        if (RuntimeState == null)
+        {
+            return;
+        }
+
+        RuntimeState.UpperSand = context.CompletedUpper;
+        RuntimeState.LowerSand = context.CompletedLower;
+
+        CombatActorRuntime current = RuntimeState.GetActor(context.EndingTurnState);
+        CombatActorRuntime opponent = RuntimeState.GetOpponent(context.EndingTurnState);
+        if (current != null)
+        {
+            current.AvailableSand = context.CompletedUpper;
+            current.TransferredSand = context.CompletedLower;
+        }
+
+        if (opponent != null)
+        {
+            opponent.AvailableSand = 0;
+            opponent.TransferredSand = 0;
+        }
     }
 
     private EnemyIntentType DetermineEnemyIntent(CombatActorRuntime enemy)
@@ -499,9 +563,9 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
         return CombatActionType.None;
     }
 
-    private void PublishTurnTransitionEvents(CombatTurnProcessor.TurnTransitionResult result)
+    private void PublishTurnTransitionEvents(CombatTurnProcessor.TurnTransitionResult result, bool includeForcedFall)
     {
-        if (result.ForcedFallAmount > 0)
+        if (includeForcedFall && result.ForcedFallAmount > 0)
         {
             EventBus.Instance.Publish(new CombatMinimumFallAppliedEvent(result.ForcedFallActor, result.ForcedFallAmount, RuntimeState != null ? RuntimeState.MinimumFall : 0));
         }

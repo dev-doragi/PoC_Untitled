@@ -190,6 +190,7 @@ public class CombatScreenPresenter : MonoBehaviour
         string actor = evt.Actor == CombatActorType.Player ? "플레이어" : "적";
         int turnIndex = _combatManager != null && _combatManager.RuntimeState != null ? _combatManager.RuntimeState.TurnIndex : 0;
         combatLogView?.AddLog($"{FormatTurnPrefix(turnIndex)}{FormatSpecial($">>> 최소 낙하 +{evt.ForcedAmount} ({actor})")}");
+        RefreshViews();
     }
 
     private void OnCombatBonusTurnGranted(CombatBonusTurnGrantedEvent evt)

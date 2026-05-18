@@ -28,7 +28,7 @@ MonoBehaviour:
   enemyWeakDamage: 3
   enemyHeavyDamage: 7
   enemyHeavyPlusDamage: 9
-  enemyDesperationDamage: 5
+  enemyDesperationDamage: 10
   allowThreatMaxDoubleAction: 1
   enemyDoubleActionFirstDamage: 3
   enemyDoubleActionSecondDamage: 6

@@ -1,4 +1,4 @@
-using DG.Tweening;
+﻿using DG.Tweening;
 using TMPro;
 using UnityEngine;
 
@@ -60,7 +60,7 @@ public class PopupToast : MonoBehaviour
     {
         if (_sequence != null)
         {
-            _sequence.Kill();
+            _sequence.Kill(false);
             _sequence = null;
         }
 
@@ -88,21 +88,22 @@ public class PopupToast : MonoBehaviour
         float safeLife = Mathf.Max(0.05f, lifeTime);
 
         _sequence = DOTween.Sequence();
+        _sequence.SetLink(gameObject, LinkBehaviour.KillOnDestroy);
         if (_canvasGroup != null)
         {
-            _sequence.Append(_canvasGroup.DOFade(1f, 0.06f));
+            _sequence.Append(_canvasGroup.DOFade(1f, 0.06f).SetLink(gameObject, LinkBehaviour.KillOnDestroy));
         }
 
         if (_rectTransform != null)
         {
-            _sequence.Join(_rectTransform.DOScale(1.15f, 0.12f).SetEase(Ease.OutBack));
-            _sequence.Append(_rectTransform.DOScale(1f, 0.08f).SetEase(Ease.OutQuad));
-            _sequence.Join(_rectTransform.DOAnchorPos(targetPos, safeLife).SetEase(Ease.OutQuad));
+            _sequence.Join(_rectTransform.DOScale(1.15f, 0.12f).SetEase(Ease.OutBack).SetLink(gameObject, LinkBehaviour.KillOnDestroy));
+            _sequence.Append(_rectTransform.DOScale(1f, 0.08f).SetEase(Ease.OutQuad).SetLink(gameObject, LinkBehaviour.KillOnDestroy));
+            _sequence.Join(_rectTransform.DOAnchorPos(targetPos, safeLife).SetEase(Ease.OutQuad).SetLink(gameObject, LinkBehaviour.KillOnDestroy));
         }
 
         if (_canvasGroup != null)
         {
-            _sequence.Append(_canvasGroup.DOFade(0f, 0.18f));
+            _sequence.Append(_canvasGroup.DOFade(0f, 0.18f).SetLink(gameObject, LinkBehaviour.KillOnDestroy));
         }
 
         _sequence.OnComplete(() =>
@@ -116,8 +117,13 @@ public class PopupToast : MonoBehaviour
     {
         if (_sequence != null)
         {
-            _sequence.Kill();
+            _sequence.Kill(false);
             _sequence = null;
         }
+
+        _rectTransform?.DOKill();
+        _canvasGroup?.DOKill();
+        _text?.DOKill();
     }
 }
+

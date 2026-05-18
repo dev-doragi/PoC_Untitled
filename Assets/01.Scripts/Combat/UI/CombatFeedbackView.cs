@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
@@ -58,7 +58,15 @@ public class CombatFeedbackView : MonoBehaviour
         float safePeakAlpha = Mathf.Clamp01(peakAlpha);
         float fadeIn = Mathf.Max(0.01f, _flashFadeInDuration);
         float fadeOut = Mathf.Max(0.01f, _flashFadeOutDuration);
-        _screenFlashImage.DOFade(safePeakAlpha, fadeIn).OnComplete(() => _screenFlashImage.DOFade(0f, fadeOut));
+        _screenFlashImage.DOFade(safePeakAlpha, fadeIn)
+            .SetLink(gameObject, LinkBehaviour.KillOnDestroy)
+            .OnComplete(() =>
+            {
+                if (_screenFlashImage != null)
+                {
+                    _screenFlashImage.DOFade(0f, fadeOut).SetLink(gameObject, LinkBehaviour.KillOnDestroy);
+                }
+            });
     }
 
     public void SpawnDamagePopup(RectTransform anchor, int value, Color c)
@@ -83,7 +91,7 @@ public class CombatFeedbackView : MonoBehaviour
         EnqueuePopup(new PopupRequest
         {
             Anchor = anchor,
-            Message = "�극��ũ",
+            Message = "브레이크",
             Color = new Color(1f, 0.9f, 0.2f, 1f),
             FontSize = 52f,
             LifeTime = 0.55f
@@ -95,7 +103,7 @@ public class CombatFeedbackView : MonoBehaviour
         EnqueuePopup(new PopupRequest
         {
             Anchor = anchor,
-            Message = "�׷α�",
+            Message = "그로기",
             Color = new Color(0.45f, 0.9f, 1f, 1f),
             FontSize = 44f,
             LifeTime = 0.55f
@@ -196,4 +204,17 @@ public class CombatFeedbackView : MonoBehaviour
             PoolManager.Instance.Despawn(toast.gameObject);
         }
     }
+
+    private void OnDisable()
+    {
+        if (_popupDrainRoutine != null)
+        {
+            StopCoroutine(_popupDrainRoutine);
+            _popupDrainRoutine = null;
+        }
+
+        _popupQueue.Clear();
+        _screenFlashImage?.DOKill();
+    }
 }
+

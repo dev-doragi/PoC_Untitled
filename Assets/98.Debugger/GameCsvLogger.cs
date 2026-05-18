@@ -139,11 +139,31 @@ public class GameCsvLogger : MonoBehaviour
         EventBus.Instance.Subscribe<StopSoundEvent>(OnStopSoundRequested);
         EventBus.Instance.Subscribe<MoveInputEvent>(OnMoveInput);
         EventBus.Instance.Subscribe<LookInputEvent>(OnLookInput);
+        EventBus.Instance.Subscribe<InputDeviceChangedEvent>(OnInputDeviceChanged);
         EventBus.Instance.Subscribe<SubmitInputEvent>(OnSubmitInput);
         EventBus.Instance.Subscribe<CancelInputEvent>(OnCancelInput);
         EventBus.Instance.Subscribe<PauseInputEvent>(OnPauseInput);
         EventBus.Instance.Subscribe<PrimaryActionInputEvent>(OnPrimaryActionInput);
         EventBus.Instance.Subscribe<SecondaryActionInputEvent>(OnSecondaryActionInput);
+        EventBus.Instance.Subscribe<CombatStrikeInputEvent>(OnCombatStrikeInput);
+        EventBus.Instance.Subscribe<CombatPierceInputEvent>(OnCombatPierceInput);
+        EventBus.Instance.Subscribe<CombatHexInputEvent>(OnCombatHexInput);
+        EventBus.Instance.Subscribe<CombatGuardInputEvent>(OnCombatGuardInput);
+        EventBus.Instance.Subscribe<CombatEndTurnInputEvent>(OnCombatEndTurnInput);
+        EventBus.Instance.Subscribe<HitStopRequestedEvent>(OnHitStopRequested);
+        EventBus.Instance.Subscribe<SlowMotionRequestedEvent>(OnSlowMotionRequested);
+
+        EventBus.Instance.Subscribe<CombatStartedEvent>(OnCombatStarted);
+        EventBus.Instance.Subscribe<CombatTurnStartedEvent>(OnCombatTurnStarted);
+        EventBus.Instance.Subscribe<CombatActionRequestedEvent>(OnCombatActionRequested);
+        EventBus.Instance.Subscribe<CombatActionExecutedEvent>(OnCombatActionExecuted);
+        EventBus.Instance.Subscribe<CombatActorDamagedEvent>(OnCombatActorDamaged);
+        EventBus.Instance.Subscribe<CombatBreakTriggeredEvent>(OnCombatBreakTriggered);
+        EventBus.Instance.Subscribe<CombatGroggyAppliedEvent>(OnCombatGroggyApplied);
+        EventBus.Instance.Subscribe<CombatMinimumFallAppliedEvent>(OnCombatMinimumFallApplied);
+        EventBus.Instance.Subscribe<CombatBonusTurnGrantedEvent>(OnCombatBonusTurnGranted);
+        EventBus.Instance.Subscribe<CombatTurnEndedEvent>(OnCombatTurnEnded);
+        EventBus.Instance.Subscribe<CombatEndedEvent>(OnCombatEnded);
     }
 
     private void UnsubscribeEvents()
@@ -159,11 +179,31 @@ public class GameCsvLogger : MonoBehaviour
         EventBus.Instance.Unsubscribe<StopSoundEvent>(OnStopSoundRequested);
         EventBus.Instance.Unsubscribe<MoveInputEvent>(OnMoveInput);
         EventBus.Instance.Unsubscribe<LookInputEvent>(OnLookInput);
+        EventBus.Instance.Unsubscribe<InputDeviceChangedEvent>(OnInputDeviceChanged);
         EventBus.Instance.Unsubscribe<SubmitInputEvent>(OnSubmitInput);
         EventBus.Instance.Unsubscribe<CancelInputEvent>(OnCancelInput);
         EventBus.Instance.Unsubscribe<PauseInputEvent>(OnPauseInput);
         EventBus.Instance.Unsubscribe<PrimaryActionInputEvent>(OnPrimaryActionInput);
         EventBus.Instance.Unsubscribe<SecondaryActionInputEvent>(OnSecondaryActionInput);
+        EventBus.Instance.Unsubscribe<CombatStrikeInputEvent>(OnCombatStrikeInput);
+        EventBus.Instance.Unsubscribe<CombatPierceInputEvent>(OnCombatPierceInput);
+        EventBus.Instance.Unsubscribe<CombatHexInputEvent>(OnCombatHexInput);
+        EventBus.Instance.Unsubscribe<CombatGuardInputEvent>(OnCombatGuardInput);
+        EventBus.Instance.Unsubscribe<CombatEndTurnInputEvent>(OnCombatEndTurnInput);
+        EventBus.Instance.Unsubscribe<HitStopRequestedEvent>(OnHitStopRequested);
+        EventBus.Instance.Unsubscribe<SlowMotionRequestedEvent>(OnSlowMotionRequested);
+
+        EventBus.Instance.Unsubscribe<CombatStartedEvent>(OnCombatStarted);
+        EventBus.Instance.Unsubscribe<CombatTurnStartedEvent>(OnCombatTurnStarted);
+        EventBus.Instance.Unsubscribe<CombatActionRequestedEvent>(OnCombatActionRequested);
+        EventBus.Instance.Unsubscribe<CombatActionExecutedEvent>(OnCombatActionExecuted);
+        EventBus.Instance.Unsubscribe<CombatActorDamagedEvent>(OnCombatActorDamaged);
+        EventBus.Instance.Unsubscribe<CombatBreakTriggeredEvent>(OnCombatBreakTriggered);
+        EventBus.Instance.Unsubscribe<CombatGroggyAppliedEvent>(OnCombatGroggyApplied);
+        EventBus.Instance.Unsubscribe<CombatMinimumFallAppliedEvent>(OnCombatMinimumFallApplied);
+        EventBus.Instance.Unsubscribe<CombatBonusTurnGrantedEvent>(OnCombatBonusTurnGranted);
+        EventBus.Instance.Unsubscribe<CombatTurnEndedEvent>(OnCombatTurnEnded);
+        EventBus.Instance.Unsubscribe<CombatEndedEvent>(OnCombatEnded);
     }
 
     private void OnGameStateChanged(GameStateChangedEvent evt)
@@ -241,11 +281,79 @@ public class GameCsvLogger : MonoBehaviour
 
     private void OnMoveInput(MoveInputEvent evt) => LogInput("Move", evt.Value.ToString());
     private void OnLookInput(LookInputEvent evt) => LogInput("Look", evt.Value.ToString());
+    private void OnInputDeviceChanged(InputDeviceChangedEvent evt) => LogInput("DeviceChanged", evt.DeviceName ?? string.Empty);
     private void OnSubmitInput(SubmitInputEvent evt) => LogInput("Submit", "Triggered");
     private void OnCancelInput(CancelInputEvent evt) => LogInput("Cancel", "Triggered");
     private void OnPauseInput(PauseInputEvent evt) => LogInput("Pause", "Triggered");
     private void OnPrimaryActionInput(PrimaryActionInputEvent evt) => LogInput("PrimaryAction", evt.IsPressed ? "Pressed" : "Released");
     private void OnSecondaryActionInput(SecondaryActionInputEvent evt) => LogInput("SecondaryAction", evt.IsPressed ? "Pressed" : "Released");
+    private void OnCombatStrikeInput(CombatStrikeInputEvent evt) => LogInput("CombatStrike", "Triggered");
+    private void OnCombatPierceInput(CombatPierceInputEvent evt) => LogInput("CombatPierce", "Triggered");
+    private void OnCombatHexInput(CombatHexInputEvent evt) => LogInput("CombatHex", "Triggered");
+    private void OnCombatGuardInput(CombatGuardInputEvent evt) => LogInput("CombatGuard", "Triggered");
+    private void OnCombatEndTurnInput(CombatEndTurnInputEvent evt) => LogInput("CombatEndTurn", "Triggered");
+
+    private void OnHitStopRequested(HitStopRequestedEvent evt)
+    {
+        Log(GameLogEventType.Custom, metadata: new Dictionary<string, object>
+        {
+            { "event_name", "HitStopRequested" },
+            { "duration", evt.Duration },
+            { "time_scale", evt.TimeScale }
+        });
+    }
+
+    private void OnSlowMotionRequested(SlowMotionRequestedEvent evt)
+    {
+        Log(GameLogEventType.Custom, metadata: new Dictionary<string, object>
+        {
+            { "event_name", "SlowMotionRequested" },
+            { "duration", evt.Duration },
+            { "time_scale", evt.TimeScale }
+        });
+    }
+
+    private void OnCombatStarted(CombatStartedEvent evt) => LogCombatEvent("CombatStartedEvent", evt.Snapshot);
+    private void OnCombatTurnStarted(CombatTurnStartedEvent evt) => LogCombatEvent("CombatTurnStartedEvent", evt.Snapshot);
+    private void OnCombatActionExecuted(CombatActionExecutedEvent evt) => LogCombatEvent("CombatActionExecutedEvent", evt.Snapshot);
+    private void OnCombatActorDamaged(CombatActorDamagedEvent evt) => LogCombatEvent("CombatActorDamagedEvent", evt.Snapshot);
+    private void OnCombatBreakTriggered(CombatBreakTriggeredEvent evt) => LogCombatEvent("CombatBreakTriggeredEvent", evt.Snapshot);
+    private void OnCombatGroggyApplied(CombatGroggyAppliedEvent evt) => LogCombatEvent("CombatGroggyAppliedEvent", evt.Snapshot);
+    private void OnCombatTurnEnded(CombatTurnEndedEvent evt) => LogCombatEvent("CombatTurnEndedEvent", evt.Snapshot);
+
+    private void OnCombatActionRequested(CombatActionRequestedEvent evt)
+    {
+        Log(GameLogEventType.CombatEvent, metadata: new Dictionary<string, object>
+        {
+            { "event_name", "CombatActionRequestedEvent" },
+            { "action_type", evt.ActionType.ToString() }
+        });
+    }
+
+    private void OnCombatMinimumFallApplied(CombatMinimumFallAppliedEvent evt)
+    {
+        Log(GameLogEventType.CombatEvent, metadata: new Dictionary<string, object>
+        {
+            { "event_name", "CombatMinimumFallAppliedEvent" },
+            { "actor", evt.Actor.ToString() },
+            { "forced_amount", evt.ForcedAmount },
+            { "minimum_fall", evt.MinimumFall }
+        });
+    }
+
+    private void OnCombatBonusTurnGranted(CombatBonusTurnGrantedEvent evt)
+    {
+        Dictionary<string, object> metadata = BuildSnapshotMetadata(evt.Snapshot, "CombatBonusTurnGrantedEvent");
+        metadata["bonus_actor"] = evt.Actor.ToString();
+        Log(GameLogEventType.CombatEvent, metadata: metadata);
+    }
+
+    private void OnCombatEnded(CombatEndedEvent evt)
+    {
+        Dictionary<string, object> metadata = BuildSnapshotMetadata(evt.Snapshot, "CombatEndedEvent");
+        metadata["player_won"] = evt.PlayerWon;
+        Log(GameLogEventType.CombatEvent, metadata: metadata);
+    }
 
     private void LogInput(string actionName, string value)
     {
@@ -254,6 +362,36 @@ public class GameCsvLogger : MonoBehaviour
             { "action", actionName },
             { "value", value }
         });
+    }
+
+    private void LogCombatEvent(string eventName, CombatLogSnapshot snapshot)
+    {
+        Log(GameLogEventType.CombatEvent, metadata: BuildSnapshotMetadata(snapshot, eventName));
+    }
+
+    private static Dictionary<string, object> BuildSnapshotMetadata(CombatLogSnapshot snapshot, string eventName)
+    {
+        return new Dictionary<string, object>
+        {
+            { "event_name", eventName },
+            { "turn_index", snapshot.turn_index },
+            { "turn_state", snapshot.turn_state.ToString() },
+            { "actor", snapshot.actor.ToString() },
+            { "action_type", snapshot.action_type.ToString() },
+            { "spent_sand", snapshot.spent_sand },
+            { "damage", snapshot.damage },
+            { "player_hp", snapshot.player_hp },
+            { "enemy_hp", snapshot.enemy_hp },
+            { "player_available_sand", snapshot.player_available_sand },
+            { "enemy_available_sand", snapshot.enemy_available_sand },
+            { "player_transferred_sand", snapshot.player_transferred_sand },
+            { "enemy_transferred_sand", snapshot.enemy_transferred_sand },
+            { "player_guard_value", snapshot.player_guard_value },
+            { "enemy_threat", snapshot.enemy_threat },
+            { "enemy_guard_value", snapshot.enemy_guard_value },
+            { "enemy_groggy_pending", snapshot.enemy_groggy_pending },
+            { "enemy_groggy_active", snapshot.enemy_groggy_active }
+        };
     }
 
     public void LogCustom(string message, Dictionary<string, object> metadata = null, GameObject actor = null, GameObject target = null)

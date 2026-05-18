@@ -1,4 +1,4 @@
-using DG.Tweening;
+﻿using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -34,6 +34,12 @@ public class CombatActorPanelView : MonoBehaviour
     private void Awake()
     {
         CacheVisualDefaults();
+    }
+
+    private void OnDisable()
+    {
+        _motionRoot?.DOKill();
+        _hitFlash?.DOKill();
     }
 
     public void ApplyPlayerState(CombatActorRuntime player, bool isCurrentTurn, float guardBarMax)
@@ -170,8 +176,19 @@ public class CombatActorPanelView : MonoBehaviour
 
         _motionRoot.DOKill();
         _motionRoot.DOAnchorPos(_baseMotionPos + new Vector2(34f * direction, 0f), 0.08f)
+            .SetLink(gameObject, LinkBehaviour.KillOnDestroy)
             .SetEase(Ease.OutQuad)
-            .OnComplete(() => _motionRoot.DOAnchorPos(_baseMotionPos, 0.15f).SetEase(Ease.OutBack));
+            .OnComplete(() =>
+            {
+                if (_motionRoot == null)
+                {
+                    return;
+                }
+
+                _motionRoot.DOAnchorPos(_baseMotionPos, 0.15f)
+                    .SetLink(gameObject, LinkBehaviour.KillOnDestroy)
+                    .SetEase(Ease.OutBack);
+            });
     }
 
     public void PlayHitReaction()
@@ -180,14 +197,31 @@ public class CombatActorPanelView : MonoBehaviour
         {
             _hitFlash.DOKill();
             _hitFlash.color = new Color(1f, 1f, 1f, 0f);
-            _hitFlash.DOFade(0.5f, 0.05f).OnComplete(() => _hitFlash.DOFade(0f, 0.12f));
+            _hitFlash.DOFade(0.5f, 0.05f)
+                .SetLink(gameObject, LinkBehaviour.KillOnDestroy)
+                .OnComplete(() =>
+                {
+                    if (_hitFlash == null)
+                    {
+                        return;
+                    }
+
+                    _hitFlash.DOFade(0f, 0.12f).SetLink(gameObject, LinkBehaviour.KillOnDestroy);
+                });
         }
 
         if (_motionRoot != null)
         {
             _motionRoot.DOKill();
             _motionRoot.DOShakeAnchorPos(0.18f, new Vector2(18f, 0f), 20, 90f, false, true)
-                .OnComplete(() => _motionRoot.anchoredPosition = _baseMotionPos);
+                .SetLink(gameObject, LinkBehaviour.KillOnDestroy)
+                .OnComplete(() =>
+                {
+                    if (_motionRoot != null)
+                    {
+                        _motionRoot.anchoredPosition = _baseMotionPos;
+                    }
+                });
         }
     }
 
@@ -238,3 +272,4 @@ public class CombatActorPanelView : MonoBehaviour
         _visualCached = true;
     }
 }
+

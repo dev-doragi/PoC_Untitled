@@ -118,7 +118,7 @@ public class HourglassSandView : MonoBehaviour
         }
 
         _hasPendingFlipPreview = true;
-        _forceFlipPending = true;
+        _forceFlipPending = false;
         _previewTurnState = snapshot.turn_state;
         _queuedStateDuringFlip = null;
 
