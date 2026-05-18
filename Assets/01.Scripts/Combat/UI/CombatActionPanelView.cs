@@ -69,11 +69,11 @@ public class CombatActionPanelView : MonoBehaviour
 
     public void SetStaticTexts()
     {
-        SetTexts(_strikeNameText, _strikeCostText, _strikeEffectText, "STRIKE", "Cost 3", "DMG 6");
-        SetTexts(_pierceNameText, _pierceCostText, _pierceEffectText, "PIERCE", "Cost 3", "E.GUARD -4");
-        SetTexts(_hexNameText, _hexCostText, _hexEffectText, "HEX", "Cost 3", "THREAT -1");
-        SetTexts(_guardNameText, _guardCostText, _guardEffectText, "GUARD", "Cost 2", "BLOCK +4");
-        SetTexts(_endTurnNameText, _endTurnCostText, _endTurnEffectText, "FLIP", "End Turn", "Enemy +0");
+        SetTexts(_strikeNameText, _strikeCostText, _strikeEffectText, "강타", "비용 3", "피해 6");
+        SetTexts(_pierceNameText, _pierceCostText, _pierceEffectText, "관통", "비용 3", "적 가드 -4");
+        SetTexts(_hexNameText, _hexCostText, _hexEffectText, "저주", "비용 3", "위협 -1");
+        SetTexts(_guardNameText, _guardCostText, _guardEffectText, "방어", "비용 2", "가드 +4");
+        SetTexts(_endTurnNameText, _endTurnCostText, _endTurnEffectText, "플립", "턴 종료", "적 +0");
 
         SetText(_strikeKeyText, "Q");
         SetText(_pierceKeyText, "W");
@@ -86,7 +86,7 @@ public class CombatActionPanelView : MonoBehaviour
     {
         if (_endTurnEffectText != null)
         {
-            string target = nextIsEnemy ? "Enemy" : "Player";
+            string target = nextIsEnemy ? "적" : "플레이어";
             _endTurnEffectText.text = $"{target} +{Mathf.Max(0, nextSand)}";
         }
     }

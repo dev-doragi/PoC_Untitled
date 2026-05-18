@@ -141,11 +141,11 @@ public class CombatActorPanelView : MonoBehaviour
         {
             if (enemy.GroggyActive)
             {
-                _groggyText.text = "!!GROGGY!!";
+                _groggyText.text = "!!그로기!!";
             }
             else if (enemy.GroggyPending)
             {
-                _groggyText.text = "GROGGY NEXT";
+                _groggyText.text = "다음 턴 그로기";
             }
             else
             {
@@ -155,7 +155,7 @@ public class CombatActorPanelView : MonoBehaviour
 
         if (_warningText != null)
         {
-            _warningText.text = enemy.EnemyThreat >= safeThreatCap ? "!!THREAT MAX!!" : string.Empty;
+            _warningText.text = enemy.EnemyThreat >= safeThreatCap ? "!!위협 최대!!" : string.Empty;
         }
 
         ApplyTurnVisual(isCurrentTurn);

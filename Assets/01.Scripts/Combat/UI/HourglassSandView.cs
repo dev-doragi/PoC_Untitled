@@ -159,7 +159,7 @@ public class HourglassSandView : MonoBehaviour
             return;
         }
 
-        _turnText.text = playerWon ? "YOU WIN!" : "YOU LOSE!";
+        _turnText.text = playerWon ? "승리!" : "패배!";
     }
 
     private void ApplyState(CombatRuntimeState state)
@@ -281,7 +281,7 @@ public class HourglassSandView : MonoBehaviour
         {
             if (_nextSandText != null)
             {
-                _nextSandText.text = "NEXT -";
+                _nextSandText.text = "다음 -";
             }
             return;
         }
@@ -308,12 +308,12 @@ public class HourglassSandView : MonoBehaviour
 
         if (groggyReduced)
         {
-            _nextSandText.text = $"GROGGY {previewBase} -> {previewReduced}";
+            _nextSandText.text = $"그로기 {previewBase} -> {previewReduced}";
             return;
         }
 
-        string nextActor = nextIsEnemy ? "ENEMY" : "PLAYER";
-        _nextSandText.text = $"NEXT {nextActor} {previewReduced}";
+        string nextActor = nextIsEnemy ? "적" : "플레이어";
+        _nextSandText.text = $"다음 {nextActor} {previewReduced}";
     }
 
     private void ApplySliderDirection()

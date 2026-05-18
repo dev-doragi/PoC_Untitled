@@ -15,10 +15,11 @@ public class CombatFeedbackView : MonoBehaviour
     [SerializeField] [Range(0f, 1f)] private float _flashPeakAlpha = 0.12f;
     [SerializeField] private float _flashFadeInDuration = 0.04f;
     [SerializeField] private float _flashFadeOutDuration = 0.14f;
+    [SerializeField] private float _popupSpawnInterval = 0.05f;
 
     private Canvas _canvas;
     private readonly Queue<PopupRequest> _popupQueue = new();
-    private bool _isPopupPlaying;
+    private Coroutine _popupDrainRoutine;
     private bool _poolMissingLogged;
 
     private struct PopupRequest
@@ -82,7 +83,7 @@ public class CombatFeedbackView : MonoBehaviour
         EnqueuePopup(new PopupRequest
         {
             Anchor = anchor,
-            Message = "BREAK",
+            Message = "브레이크",
             Color = new Color(1f, 0.9f, 0.2f, 1f),
             FontSize = 52f,
             LifeTime = 0.55f
@@ -94,7 +95,7 @@ public class CombatFeedbackView : MonoBehaviour
         EnqueuePopup(new PopupRequest
         {
             Anchor = anchor,
-            Message = "GROGGY",
+            Message = "그로기",
             Color = new Color(0.45f, 0.9f, 1f, 1f),
             FontSize = 44f,
             LifeTime = 0.55f
@@ -104,28 +105,37 @@ public class CombatFeedbackView : MonoBehaviour
     private void EnqueuePopup(PopupRequest request)
     {
         _popupQueue.Enqueue(request);
-        if (!_isPopupPlaying)
+        if (_popupDrainRoutine == null)
         {
-            PlayNextPopup();
+            _popupDrainRoutine = StartCoroutine(DrainPopupQueue());
         }
     }
 
-    private void PlayNextPopup()
+    private System.Collections.IEnumerator DrainPopupQueue()
     {
-        if (_popupQueue.Count == 0)
+        while (_popupQueue.Count > 0)
         {
-            _isPopupPlaying = false;
-            return;
+            SpawnSinglePopup(_popupQueue.Dequeue());
+            float interval = Mathf.Max(0f, _popupSpawnInterval);
+            if (interval > 0f)
+            {
+                yield return new WaitForSeconds(interval);
+            }
+            else
+            {
+                yield return null;
+            }
         }
 
-        _isPopupPlaying = true;
-        PopupRequest request = _popupQueue.Dequeue();
+        _popupDrainRoutine = null;
+    }
+
+    private void SpawnSinglePopup(PopupRequest request)
+    {
         Vector2 anchoredPosition = ResolveLocal(request.Anchor);
 
         if (_popupLayer == null)
         {
-            _isPopupPlaying = false;
-            PlayNextPopup();
             return;
         }
 
@@ -137,16 +147,12 @@ public class CombatFeedbackView : MonoBehaviour
                 _poolMissingLogged = true;
             }
 
-            _isPopupPlaying = false;
-            PlayNextPopup();
             return;
         }
 
         GameObject popupObject = PoolManager.Instance.SpawnUI(_popupPrefabName, _popupLayer, anchoredPosition);
         if (popupObject == null)
         {
-            _isPopupPlaying = false;
-            PlayNextPopup();
             return;
         }
 
@@ -154,8 +160,6 @@ public class CombatFeedbackView : MonoBehaviour
         if (toast == null)
         {
             PoolManager.Instance.Despawn(popupObject);
-            _isPopupPlaying = false;
-            PlayNextPopup();
             return;
         }
 
@@ -191,8 +195,5 @@ public class CombatFeedbackView : MonoBehaviour
         {
             PoolManager.Instance.Despawn(toast.gameObject);
         }
-
-        _isPopupPlaying = false;
-        PlayNextPopup();
     }
 }

@@ -88,13 +88,13 @@ public class CombatScreenPresenter : MonoBehaviour
 
     private void OnCombatStarted(CombatStartedEvent evt)
     {
-        combatLogView?.AddLog($"{FormatTurnPrefix(evt.Snapshot.turn_index)}{FormatSpecial("COMBAT START")}");
+        combatLogView?.AddLog($"{FormatTurnPrefix(evt.Snapshot.turn_index)}{FormatSpecial("전투 시작")}");
         RefreshViews();
     }
 
     private void OnCombatTurnStarted(CombatTurnStartedEvent evt)
     {
-        combatLogView?.AddLog($"{FormatTurnPrefix(evt.Snapshot.turn_index)}{FormatTurnHeadline(evt.Snapshot.turn_state, "START")}");
+        combatLogView?.AddLog($"{FormatTurnPrefix(evt.Snapshot.turn_index)}{FormatTurnHeadline(evt.Snapshot.turn_state, "시작")}");
         RefreshViews();
     }
 
@@ -102,12 +102,12 @@ public class CombatScreenPresenter : MonoBehaviour
     {
         if (evt.Snapshot.action_type == CombatActionType.EndTurn)
         {
-            combatLogView?.AddLog($"{FormatTurnPrefix(evt.Snapshot.turn_index)}{FormatSpecial("FLIP")}");
+            combatLogView?.AddLog($"{FormatTurnPrefix(evt.Snapshot.turn_index)}{FormatSpecial("플립")}");
         }
         else
         {
-            string actor = evt.Snapshot.actor == CombatActorType.Player ? "Player" : "Enemy";
-            combatLogView?.AddLog($"{FormatTurnPrefix(evt.Snapshot.turn_index)}<color={ActionColor}>{actor} used {evt.Snapshot.action_type}</color>");
+            string actor = evt.Snapshot.actor == CombatActorType.Player ? "플레이어" : "적";
+            combatLogView?.AddLog($"{FormatTurnPrefix(evt.Snapshot.turn_index)}<color={ActionColor}>{actor} {ToKoreanActionName(evt.Snapshot.action_type)} 사용</color>");
         }
 
         if (evt.Snapshot.action_type == CombatActionType.EndTurn)
@@ -138,7 +138,7 @@ public class CombatScreenPresenter : MonoBehaviour
 
     private void OnCombatTurnEnded(CombatTurnEndedEvent evt)
     {
-        combatLogView?.AddLog($"{FormatTurnPrefix(evt.Snapshot.turn_index)}<b><color={ActionColor}>TURN END</color></b>");
+        combatLogView?.AddLog($"{FormatTurnPrefix(evt.Snapshot.turn_index)}<b><color={ActionColor}>턴 종료</color></b>");
         RefreshViews();
     }
 
@@ -148,8 +148,8 @@ public class CombatScreenPresenter : MonoBehaviour
         target?.PlayHitReaction();
         combatFeedbackView?.SpawnDamagePopup(target?.PopupAnchor, evt.Snapshot.damage, evt.Snapshot.actor == CombatActorType.Player ? new Color(1f, 0.35f, 0.35f, 1f) : new Color(1f, 0.65f, 0.3f, 1f));
         combatFeedbackView?.PlayScreenPulse();
-        string victim = evt.Snapshot.actor == CombatActorType.Player ? "Player" : "Enemy";
-        combatLogView?.AddLog($"{FormatTurnPrefix(evt.Snapshot.turn_index)}<color={DamageColor}>Damage {evt.Snapshot.damage} -> {victim}</color>");
+        string victim = evt.Snapshot.actor == CombatActorType.Player ? "플레이어" : "적";
+        combatLogView?.AddLog($"{FormatTurnPrefix(evt.Snapshot.turn_index)}<color={DamageColor}>{victim}에게 {evt.Snapshot.damage} 피해</color>");
         RefreshViews();
     }
 
@@ -158,7 +158,7 @@ public class CombatScreenPresenter : MonoBehaviour
         CombatActorPanelView target = evt.Snapshot.actor == CombatActorType.Player ? playerStatusView : enemyStatusView;
         combatFeedbackView?.ShowBreakText(target?.PopupAnchor);
         combatFeedbackView?.PlayScreenPulse();
-        combatLogView?.AddLog($"{FormatTurnPrefix(evt.Snapshot.turn_index)}{FormatSpecial(">>> BREAK!")}");
+        combatLogView?.AddLog($"{FormatTurnPrefix(evt.Snapshot.turn_index)}{FormatSpecial(">>> 브레이크!")}");
         RefreshViews();
     }
 
@@ -167,13 +167,13 @@ public class CombatScreenPresenter : MonoBehaviour
         CombatActorPanelView target = evt.Snapshot.actor == CombatActorType.Player ? playerStatusView : enemyStatusView;
         combatFeedbackView?.ShowGroggyText(target?.PopupAnchor);
         combatFeedbackView?.PlayScreenPulse();
-        combatLogView?.AddLog($"{FormatTurnPrefix(evt.Snapshot.turn_index)}{FormatSpecial(">>> GROGGY")}");
+        combatLogView?.AddLog($"{FormatTurnPrefix(evt.Snapshot.turn_index)}{FormatSpecial(">>> 그로기")}");
         RefreshViews();
     }
 
     private void OnCombatEnded(CombatEndedEvent evt)
     {
-        combatLogView?.AddLog($"{FormatTurnPrefix(evt.Snapshot.turn_index)}{FormatSpecial(evt.PlayerWon ? "VICTORY" : "DEFEAT")}");
+        combatLogView?.AddLog($"{FormatTurnPrefix(evt.Snapshot.turn_index)}{FormatSpecial(evt.PlayerWon ? "승리" : "패배")}");
         RefreshViews();
         hourglassView?.SetResultText(evt.PlayerWon);
         SetAllButtonsInteractable(false);
@@ -187,16 +187,16 @@ public class CombatScreenPresenter : MonoBehaviour
         }
 
         CacheCombatManager();
-        string actor = evt.Actor == CombatActorType.Player ? "Player" : "Enemy";
+        string actor = evt.Actor == CombatActorType.Player ? "플레이어" : "적";
         int turnIndex = _combatManager != null && _combatManager.RuntimeState != null ? _combatManager.RuntimeState.TurnIndex : 0;
-        combatLogView?.AddLog($"{FormatTurnPrefix(turnIndex)}{FormatSpecial($">>> MinimumFall +{evt.ForcedAmount} ({actor})")}");
+        combatLogView?.AddLog($"{FormatTurnPrefix(turnIndex)}{FormatSpecial($">>> 최소 낙하 +{evt.ForcedAmount} ({actor})")}");
     }
 
     private void OnCombatBonusTurnGranted(CombatBonusTurnGrantedEvent evt)
     {
         int turnIndex = evt.Snapshot.turn_index;
-        string actor = evt.Actor == CombatActorType.Player ? "Player" : "Enemy";
-        combatLogView?.AddLog($"{FormatTurnPrefix(turnIndex)}<b><color={BonusTurnColor}>>> BONUS TURN! {actor} acts again</color></b>");
+        string actor = evt.Actor == CombatActorType.Player ? "플레이어" : "적";
+        combatLogView?.AddLog($"{FormatTurnPrefix(turnIndex)}<b><color={BonusTurnColor}>>> 보너스 턴! {actor}이(가) 한 번 더 행동</color></b>");
     }
 
     private void CacheCombatManager()
@@ -382,12 +382,12 @@ public class CombatScreenPresenter : MonoBehaviour
     {
         if (turnState == CombatTurnState.PlayerTurn)
         {
-            return $"<b><color={PlayerTurnColor}>PLAYER TURN {phase}</color></b>";
+            return $"<b><color={PlayerTurnColor}>플레이어 턴 {phase}</color></b>";
         }
 
         if (turnState == CombatTurnState.EnemyTurn)
         {
-            return $"<b><color={EnemyTurnColor}>ENEMY TURN {phase}</color></b>";
+            return $"<b><color={EnemyTurnColor}>적 턴 {phase}</color></b>";
         }
 
         return $"<b><color={ActionColor}>{turnState} {phase}</color></b>";
@@ -396,6 +396,25 @@ public class CombatScreenPresenter : MonoBehaviour
     private static string FormatSpecial(string message)
     {
         return $"<b><color={SpecialEventColor}>{message}</color></b>";
+    }
+
+    private static string ToKoreanActionName(CombatActionType actionType)
+    {
+        switch (actionType)
+        {
+            case CombatActionType.Strike: return "강타";
+            case CombatActionType.Pierce: return "관통";
+            case CombatActionType.Hex: return "저주";
+            case CombatActionType.Guard: return "방어";
+            case CombatActionType.EndTurn: return "턴 종료";
+            case CombatActionType.RecoverGuard: return "가드 회복";
+            case CombatActionType.WeakAttack: return "약공격";
+            case CombatActionType.HeavyAttack: return "강공격";
+            case CombatActionType.HeavyAttackPlus: return "강공격+";
+            case CombatActionType.DesperationStrike: return "발악";
+            case CombatActionType.DoubleAction: return "연속 행동";
+            default: return "알 수 없음";
+        }
     }
 
     private static int ComputeNextUpperAfterMinimumFall(int availableSand, int transferredSand, int minimumFall)
