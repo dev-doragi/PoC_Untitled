@@ -10,16 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 642458f29de37a44ab66a4c74fd6aea4, type: 3}
-  m_Name: Enemy_Test
+  m_Name: Enemy_Test 1
   m_EditorClassIdentifier: Assembly-CSharp::CombatActorDataSO
   actorType: 2
-  maxHp: 40
+  maxHp: 24
   initialSand: 0
-  baseGuard: 17
-  idleSprite: {fileID: 21300000, guid: 6fabc78ec53655f4c8d78ff956f2c4ab, type: 3}
-  attackSprite: {fileID: 21300000, guid: 6fabc78ec53655f4c8d78ff956f2c4ab, type: 3}
-  hitSprite: {fileID: 21300000, guid: 6fabc78ec53655f4c8d78ff956f2c4ab, type: 3}
-  deathSprite: {fileID: 21300000, guid: 6fabc78ec53655f4c8d78ff956f2c4ab, type: 3}
+  baseGuard: 9
+  idleSprite: {fileID: -5588998997088224641, guid: c53f08d227796114597de804c5d901c0, type: 3}
+  attackSprite: {fileID: -5588998997088224641, guid: c53f08d227796114597de804c5d901c0, type: 3}
+  hitSprite: {fileID: -5588998997088224641, guid: c53f08d227796114597de804c5d901c0, type: 3}
+  deathSprite: {fileID: -6264708016172561700, guid: c53f08d227796114597de804c5d901c0, type: 3}
   attackMoveOffset: {x: 0.35, y: 0, z: 0}
   attackMoveDuration: 0.12
   attackReturnDuration: 0.14

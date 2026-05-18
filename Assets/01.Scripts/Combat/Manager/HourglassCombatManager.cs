@@ -34,9 +34,12 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
     private readonly CombatTurnProcessor _turnProcessor = new CombatTurnProcessor();
     private readonly Dictionary<CombatActionType, CombatActionDataSO> _actionDataByType = new Dictionary<CombatActionType, CombatActionDataSO>();
     private Coroutine _enemyTurnRoutine;
+    private int? _nextCombatPlayerStartHpOverride;
 
     public CombatRuntimeState RuntimeState { get; private set; }
     public float FlipDuration => Mathf.Max(0f, _flipDuration);
+    public CombatActorDataSO PlayerData => _playerData;
+    public CombatActorDataSO EnemyData => _enemyData;
 
     protected override void OnBootstrap()
     {
@@ -51,6 +54,7 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
             return;
         }
 
+        ApplyNextCombatPlayerHpOverrideIfNeeded();
         RuntimeState.TurnIndex = 0;
         RuntimeState.TurnState = CombatTurnState.PlayerTurn;
         RuntimeState.IsCombatEnded = false;
@@ -68,6 +72,24 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
     public void RequestHex() => RequestPlayerAction(CombatActionType.Hex);
     public void RequestGuard() => RequestPlayerAction(CombatActionType.Guard);
     public void RequestEndTurn() => RequestPlayerAction(CombatActionType.EndTurn);
+
+    public void ConfigureCombatActors(CombatActorDataSO playerData, CombatActorDataSO enemyData)
+    {
+        if (playerData != null)
+        {
+            _playerData = playerData;
+        }
+
+        if (enemyData != null)
+        {
+            _enemyData = enemyData;
+        }
+    }
+
+    public void SetNextCombatPlayerStartHpOverride(int playerHp)
+    {
+        _nextCombatPlayerStartHpOverride = Mathf.Max(0, playerHp);
+    }
 
     private void RequestPlayerAction(CombatActionType actionType)
     {
@@ -90,6 +112,23 @@ public class HourglassCombatManager : Singleton<HourglassCombatManager>
         }
 
         TryExecutePlayerAction(actionType);
+    }
+
+    private void ApplyNextCombatPlayerHpOverrideIfNeeded()
+    {
+        if (!_nextCombatPlayerStartHpOverride.HasValue)
+        {
+            return;
+        }
+
+        if (RuntimeState == null || RuntimeState.Player == null)
+        {
+            _nextCombatPlayerStartHpOverride = null;
+            return;
+        }
+
+        RuntimeState.Player.CurrentHp = Mathf.Clamp(_nextCombatPlayerStartHpOverride.Value, 0, RuntimeState.Player.MaxHp);
+        _nextCombatPlayerStartHpOverride = null;
     }
 
     private void InitializeRuntime()

@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Pierce
   m_EditorClassIdentifier: Assembly-CSharp::CombatActionDataSO
   actionType: 2
-  baseDamage: 3
+  baseDamage: 2
   sandCost: 3
-  breakPower: 4
+  breakPower: 3
   threatDelta: 0
   guardValue: 0

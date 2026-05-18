@@ -16,3 +16,14 @@ MonoBehaviour:
   maxHp: 36
   initialSand: 0
   baseGuard: 0
+  idleSprite: {fileID: 21300000, guid: 9b952e7f7b8612e46a7503cb3509dbfb, type: 3}
+  attackSprite: {fileID: 21300000, guid: 9b952e7f7b8612e46a7503cb3509dbfb, type: 3}
+  hitSprite: {fileID: 21300000, guid: 9b952e7f7b8612e46a7503cb3509dbfb, type: 3}
+  deathSprite: {fileID: 21300000, guid: 9b952e7f7b8612e46a7503cb3509dbfb, type: 3}
+  attackMoveOffset: {x: 0.35, y: 0, z: 0}
+  attackMoveDuration: 0.12
+  attackReturnDuration: 0.14
+  hitShakeDuration: 0.18
+  hitShakeStrength: 0.12
+  hitShakeVibrato: 12
+  deathFadeDuration: 0.7

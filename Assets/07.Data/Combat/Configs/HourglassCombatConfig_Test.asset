@@ -25,10 +25,10 @@ MonoBehaviour:
   resetThreatOnBreak: 1
   enemyRecoverGuardAmount: 2
   enemyHighSandRecoverGuardBonus: 1
-  enemyWeakDamage: 4
-  enemyHeavyDamage: 8
-  enemyHeavyPlusDamage: 11
-  enemyDesperationDamage: 6
+  enemyWeakDamage: 3
+  enemyHeavyDamage: 7
+  enemyHeavyPlusDamage: 9
+  enemyDesperationDamage: 5
   allowThreatMaxDoubleAction: 1
-  enemyDoubleActionFirstDamage: 4
-  enemyDoubleActionSecondDamage: 8
+  enemyDoubleActionFirstDamage: 3
+  enemyDoubleActionSecondDamage: 6

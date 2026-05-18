@@ -22,8 +22,6 @@ public class CombatScreenPresenter : MonoBehaviour
     [SerializeField] private CombatLogView combatLogView;
     [SerializeField] private CombatFeedbackView combatFeedbackView;
     [SerializeField] private CombatActionPanelView actionPanelView;
-    [SerializeField] private SpriteRenderer playerSpriteRenderer;
-    [SerializeField] private SpriteRenderer enemySpriteRenderer;
 
     [Header("Action Costs")]
     [SerializeField] private int strikeCost = 3;
@@ -207,11 +205,6 @@ public class CombatScreenPresenter : MonoBehaviour
         {
             _combatManager = HourglassCombatManager.Instance;
         }
-
-        if (_combatManager == null)
-        {
-            _combatManager = FindAnyObjectByType<HourglassCombatManager>();
-        }
     }
 
     private void BindButtons()
@@ -254,7 +247,6 @@ public class CombatScreenPresenter : MonoBehaviour
 
         playerStatusView?.ApplyPlayerState(state.Player, isPlayerTurn, Mathf.Max(1f, playerGuardBarMax));
         enemyStatusView?.ApplyEnemyState(state.Enemy, state.MaxEnemyGuard, state.ThreatCap, isEnemyTurn);
-        UpdateActorSpriteVisibility(state);
         hourglassView?.Refresh(state);
         UpdateEndTurnPreview(state);
         UpdateActionButtons(state);
@@ -323,24 +315,6 @@ public class CombatScreenPresenter : MonoBehaviour
         }
 
         actionPanelView.SetEndTurnPreview(nextIsEnemy, preview);
-    }
-
-    private void UpdateActorSpriteVisibility(CombatRuntimeState state)
-    {
-        if (state == null)
-        {
-            return;
-        }
-
-        if (playerSpriteRenderer != null)
-        {
-            playerSpriteRenderer.gameObject.SetActive(state.Player != null && state.Player.CurrentHp > 0);
-        }
-
-        if (enemySpriteRenderer != null)
-        {
-            enemySpriteRenderer.gameObject.SetActive(state.Enemy != null && state.Enemy.CurrentHp > 0);
-        }
     }
 
     private void OnCombatStrikeInput(CombatStrikeInputEvent evt) => TryRequestFromInput(actionPanelView != null ? actionPanelView.StrikeButton : null, RequestStrike);
