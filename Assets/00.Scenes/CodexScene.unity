@@ -2014,6 +2014,7 @@ MonoBehaviour:
   _flashPeakAlpha: 0.12
   _flashFadeInDuration: 0.04
   _flashFadeOutDuration: 0.14
+  _popupSpawnInterval: 0.5
 --- !u!1 &371401040
 GameObject:
   m_ObjectHideFlags: 0
@@ -4225,8 +4226,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0.000020981, y: -241}
-  m_SizeDelta: {x: 196.06, y: 41.34}
+  m_AnchoredPosition: {x: -0, y: -241}
+  m_SizeDelta: {x: 443.57, y: 41.34}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &978033733
 MonoBehaviour:
@@ -4442,7 +4443,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 3a094dd341691cb4da8c6fd0f2563688, type: 2}
   startOnEnable: 1
   nextWaveDelay: 0.6
-  restartFromFirstOnDefeat: 1
+  carryPlayerHpBetweenWaves: 0
 --- !u!4 &1001237018
 Transform:
   m_ObjectHideFlags: 0

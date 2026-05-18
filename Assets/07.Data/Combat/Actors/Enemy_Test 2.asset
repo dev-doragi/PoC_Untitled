@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: Enemy_Test 2
   m_EditorClassIdentifier: Assembly-CSharp::CombatActorDataSO
   actorType: 2
-  maxHp: 32
+  maxHp: 26
   initialSand: 0
-  baseGuard: 13
+  baseGuard: 12
   idleSprite: {fileID: -5712373849179836237, guid: ccc02599f4c33154a92b3130ab7c541e, type: 3}
   attackSprite: {fileID: -5712373849179836237, guid: ccc02599f4c33154a92b3130ab7c541e, type: 3}
   hitSprite: {fileID: -5712373849179836237, guid: ccc02599f4c33154a92b3130ab7c541e, type: 3}
